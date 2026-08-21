@@ -57,4 +57,9 @@ yarn-error.log*
 .agents/
 .claude/
 skills-lock.json
+android-app/.gradle/
+android-app/app/build/
+android-app/local.properties
+*.apk
+
 
