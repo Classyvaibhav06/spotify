@@ -34,7 +34,9 @@ import {
   MdLogout,
   MdLogin,
 } from "react-icons/md";
+import { FaSpotify } from "react-icons/fa6";
 import { usePlayerStore, Track } from "@/store/playerStore";
+
 import { useLibraryStore } from "@/store/libraryStore";
 import { useUIStore } from "@/store/useUIStore";
 import { searchYouTubeTracks } from "@/lib/youtube";
@@ -493,14 +495,25 @@ export default function Home() {
         <main className="flex-1 bg-[#121212] rounded-xl overflow-hidden flex flex-col relative">
           {/* Sticky Top Bar */}
           <header className="h-16 flex items-center justify-between px-3 sm:px-5 sticky top-0 z-10 bg-gradient-to-b from-[#1a1a2e]/95 to-[#121212]/90 backdrop-blur-md flex-shrink-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 mr-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
+              {/* Spotify Logo & Brand */}
+              <div
+                onClick={() => setActivePage("home")}
+                className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 group"
+                title="Spotify"
+              >
+                <FaSpotify className="text-[#1ed760] text-2xl sm:text-3xl group-hover:scale-105 transition-transform" />
+                <span className="hidden sm:inline-block font-black text-white tracking-tight text-base sm:text-lg">Spotify</span>
+              </div>
+
               <button
                 onClick={() => setActivePage("home")}
                 className="w-9 h-9 rounded-full bg-black/70 flex items-center justify-center text-white/70 hover:text-white hover:bg-black transition-all flex-shrink-0"
                 title="Home"
               >
-                <MdHome size={22} />
+                <MdHome size={20} />
               </button>
+
               {/* Pill Search Input with Spotify Autocomplete & Recent Searches Popover */}
               <div ref={searchContainerRef} className="relative flex items-center flex-1 max-w-[260px] xs:max-w-[320px] sm:max-w-[380px] md:max-w-[480px]">
 

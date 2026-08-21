@@ -12,9 +12,12 @@
     <application
         android:allowBackup="true"
         android:label="Spotify"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SpotifyApp"
         android:usesCleartextTraffic="true">
+
 
         <activity
             android:name=".MainActivity"
