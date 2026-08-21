@@ -23,6 +23,7 @@ interface LibraryStore {
   updatePlaylist: (id: string, updates: Partial<Playlist>) => void;
   addToPlaylist: (playlistId: string, track: Track) => void;
   removeFromPlaylist: (playlistId: string, trackId: string) => void;
+  setLikedSongs: (songs: Track[]) => void;
   toggleLike: (track: Track) => void;
   isLiked: (trackId: string) => boolean;
   addToRecent: (track: Track) => void;
@@ -323,6 +324,18 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     set({ playlists: updated });
   },
 
+  setLikedSongs: (songs: Track[]) => {
+    const { playlists } = get();
+    const updatedPlaylists = playlists.map((p) =>
+      p.id === "pl-liked" ? { ...p, tracks: songs } : p
+    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sp_liked", JSON.stringify(songs));
+      localStorage.setItem("sp_playlists", JSON.stringify(updatedPlaylists));
+    }
+    set({ likedSongs: songs, playlists: updatedPlaylists });
+  },
+
   toggleLike: (track: Track) => {
     const { likedSongs, playlists } = get();
     const exists = likedSongs.some((t) => t.id === track.id);
@@ -337,6 +350,13 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     if (typeof window !== "undefined") {
       localStorage.setItem("sp_liked", JSON.stringify(updatedLiked));
       localStorage.setItem("sp_playlists", JSON.stringify(updatedPlaylists));
+
+      // Async sync to Database
+      fetch("/api/me/likes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ track }),
+      }).catch((err) => console.warn("DB like sync skipped:", err));
     }
 
     set({ likedSongs: updatedLiked, playlists: updatedPlaylists });

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signIn, signOut } from "next-auth/react";
 import {
   MdHome,
   MdSearch,
@@ -29,6 +30,9 @@ import {
   MdClose,
   MdAddCircleOutline,
   MdMoreHoriz,
+  MdPerson,
+  MdLogout,
+  MdLogin,
 } from "react-icons/md";
 import { usePlayerStore, Track } from "@/store/playerStore";
 import { useLibraryStore } from "@/store/libraryStore";
@@ -89,8 +93,20 @@ export default function Home() {
     addToQueue,
   } = usePlayerStore();
 
-  const { playlists, likedSongs, recentlyPlayed, toggleLike, isLiked, addToRecent } =
-    useLibraryStore();
+  // Session & Auth
+  const { data: session, status } = useSession();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const {
+    playlists,
+    likedSongs,
+    recentlyPlayed,
+    toggleLike,
+    isLiked,
+    addToRecent,
+    setLikedSongs,
+  } = useLibraryStore();
 
   const {
     activePage,
@@ -118,12 +134,36 @@ export default function Home() {
     addToast,
   } = useUIStore();
 
+  // Sync user's liked songs dynamically from database when authenticated
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/me/likes")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.likedSongs && Array.isArray(data.likedSongs) && data.likedSongs.length > 0) {
+            setLikedSongs(data.likedSongs);
+          }
+        })
+        .catch((err) => console.warn("Failed to fetch user liked songs from DB:", err));
+    }
+  }, [status, setLikedSongs]);
+
+  // Click outside listener for profile menu
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   // Local state
   const [libFilter, setLibFilter] = useState<"Playlists" | "Artists" | "Albums">("Playlists");
   const [libSort, setLibSort] = useState<"Alphabetical" | "Recently Added" | "Creator">("Alphabetical");
   const [libView, setLibView] = useState<"grid" | "list">("list");
   const [mainFilter, setMainFilter] = useState<"All" | "Music" | "Podcasts">("All");
-
 
   // Search state & Recent Searches Popover
   const [showRecentPopup, setShowRecentPopup] = useState(false);
@@ -665,7 +705,7 @@ export default function Home() {
             </div>
 
             {/* Top Bar Right Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={toggleShortcuts}
                 className="w-8 h-8 rounded-full bg-[#1f1f1f] flex items-center justify-center text-[#b3b3b3] hover:text-white hover:bg-[#252525] transition-all"
@@ -673,15 +713,111 @@ export default function Home() {
               >
                 <MdKeyboard size={18} />
               </button>
-              <button
-                onClick={() => router.push("/login")}
-                className="bg-white text-black font-bold text-xs px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md"
-              >
-                Sign In
-              </button>
-              <div className="w-8 h-8 rounded-full bg-[#1ed760] text-black flex items-center justify-center font-bold text-xs shadow-md">
-                V
-              </div>
+
+              {status === "authenticated" && session?.user ? (
+                <div className="relative" ref={profileMenuRef}>
+                  {/* Google PFP Button */}
+                  <button
+                    onClick={() => setShowProfileMenu((prev) => !prev)}
+                    className="flex items-center gap-2 p-1 rounded-full bg-[#181818] hover:bg-[#282828] border border-white/10 hover:border-white/30 transition-all cursor-pointer shadow-md group"
+                    title={session.user.name || "Account Profile"}
+                  >
+                    {session.user.image ? (
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || "User"}
+                        className="w-8 h-8 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#1ed760] text-black flex items-center justify-center font-bold text-xs shadow-md">
+                        {(session.user.name || session.user.email || "U").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Profile Details Modal / Dropdown Popover */}
+                  {showProfileMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-72 bg-[#282828] text-white rounded-2xl p-4 shadow-2xl z-50 border border-[#383838] flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+                        {session.user.image ? (
+                          <img
+                            src={session.user.image}
+                            alt={session.user.name || "User"}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-[#1ed760] shadow-md"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-[#1ed760] text-black flex items-center justify-center font-black text-lg shadow-md">
+                            {(session.user.name || session.user.email || "U").charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-sm text-white truncate">
+                            {session.user.name || "Music Listener"}
+                          </h4>
+                          <p className="text-xs text-gray-400 truncate font-medium">
+                            {session.user.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* User Stats */}
+                      <div className="grid grid-cols-2 gap-2 bg-[#1f1f1f] p-2.5 rounded-xl text-center">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-[#1ed760]">{likedSongs.length}</span>
+                          <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Liked Songs</span>
+                        </div>
+                        <div className="flex flex-col border-l border-white/10">
+                          <span className="text-sm font-black text-white">{playlists.length}</span>
+                          <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Playlists</span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col gap-1 pt-1">
+                        <button
+                          onClick={() => {
+                            setActivePage("user");
+                            setShowProfileMenu(false);
+                          }}
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-semibold text-white rounded-lg hover:bg-white/10 transition-colors text-left"
+                        >
+                          <MdPerson size={18} className="text-[#1ed760]" />
+                          <span>View Full Profile</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setActivePage("library");
+                            setShowProfileMenu(false);
+                          }}
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-semibold text-white rounded-lg hover:bg-white/10 transition-colors text-left"
+                        >
+                          <MdLibraryMusic size={18} className="text-gray-400" />
+                          <span>Your Library</span>
+                        </button>
+                        <div className="h-[1px] bg-white/10 my-0.5" />
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            signOut();
+                          }}
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-semibold text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-left"
+                        >
+                          <MdLogout size={18} />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => signIn("google")}
+                  className="bg-white text-black font-bold text-xs px-4 py-2 rounded-full hover:scale-105 transition-transform shadow-md flex items-center gap-1.5"
+                >
+                  <MdLogin size={16} />
+                  <span>Sign In</span>
+                </button>
+              )}
             </div>
           </header>
 
