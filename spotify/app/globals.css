@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+@theme {
+  --color-spotify-base: #121212;
+  --color-spotify-surface: #181818;
+  --color-spotify-elevated: #1f1f1f;
+  --color-spotify-card: #252525;
+  --color-spotify-green: #1ed760;
+  --color-spotify-silver: #b3b3b3;
+  --color-spotify-border: #2a2a2a;
+  --color-spotify-black: #000000;
+
+  --font-sans: Inter, sans-serif;
+
+  --radius-spotify-card: 6px;
+
+  --shadow-spotify-heavy: rgba(0, 0, 0, 0.5) 0px 8px 24px;
+  --shadow-spotify-medium: rgba(0, 0, 0, 0.3) 0px 8px 8px;
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────────── */
+html, body {
+  height: 100%;
+  width: 100%;
+  background-color: #000000;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Hide scrollbar ─────────────────────────────────────────────── */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─── Gradient Cover Arts ────────────────────────────────────────── */
+.bg-liked-songs { background: linear-gradient(135deg, #450af5, #c4efd9); }
+.bg-card-1 { background: linear-gradient(to bottom right, #f87171, #b91c1c); }
+.bg-card-2 { background: linear-gradient(to bottom right, #fb923c, #c2410c); }
+.bg-card-3 { background: linear-gradient(to bottom right, #60a5fa, #1d4ed8); }
+.bg-card-4 { background: linear-gradient(to bottom right, #2dd4bf, #0f766e); }
+.bg-card-5 { background: linear-gradient(to bottom right, #facc15, #a16207); }
+.bg-card-6 { background: linear-gradient(to bottom right, #a78bfa, #7c3aed); }
+.bg-card-7 { background: linear-gradient(to bottom right, #34d399, #065f46); }
+.bg-card-8 { background: linear-gradient(to bottom right, #f472b6, #be185d); }
+
+.bg-artist-main { background: linear-gradient(to bottom, #d4a373, #faedcd); }
+.bg-artist-bio  { background: linear-gradient(to bottom, #6b7280, #1f2937); }
+
+/* ─── Card hover play button overlay ────────────────────────────── */
+.group:hover .play-btn-overlay {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+.play-btn-overlay {
+  opacity: 0;
+  transform: translateY(8px) scale(0.86);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+/* ─── Progress & Volume Sliders ─────────────────────────────────── */
+.progress-track:hover .progress-fill { background: #1ed760 !important; }
+.progress-track:hover .progress-thumb { opacity: 1 !important; }
+.vol-track:hover .vol-fill { background: #1ed760 !important; }
+.vol-track:hover .vol-thumb { opacity: 1 !important; }
+
+/* ─── Hidden Range Input ────────────────────────────────────────── */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+}
+
+/* ─── Material Symbols Outlined Font ────────────────────────────── */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}

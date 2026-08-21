@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Spotify Web Player</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        'spotify-base': '#121212',
+                        'spotify-surface': '#181818',
+                        'spotify-elevated': '#1f1f1f',
+                        'spotify-card': '#252525',
+                        'spotify-green': '#1ed760',
+                        'spotify-silver': '#b3b3b3',
+                        'spotify-border': '#2a2a2a',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        'spotify-card': '6px',
+                    },
+                    boxShadow: {
+                        'spotify-heavy': 'rgba(0,0,0,0.5) 0px 8px 24px',
+                        'spotify-medium': 'rgba(0,0,0,0.3) 0px 8px 8px',
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #000; color: #fff; overflow: hidden; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .bg-liked-songs { background: linear-gradient(135deg, #450af5, #c4efd9); }
+        .bg-card-1 { background: linear-gradient(to bottom right, #f87171, #b91c1c); }
+        .bg-card-2 { background: linear-gradient(to bottom right, #fb923c, #c2410c); }
+        .bg-card-3 { background: linear-gradient(to bottom right, #60a5fa, #1d4ed8); }
+        .bg-card-4 { background: linear-gradient(to bottom right, #2dd4bf, #0f766e); }
+        .bg-card-5 { background: linear-gradient(to bottom right, #facc15, #a16207); }
+        .bg-card-6 { background: linear-gradient(to bottom right, #a78bfa, #7c3aed); }
+        .bg-card-7 { background: linear-gradient(to bottom right, #34d399, #065f46); }
+        .bg-card-8 { background: linear-gradient(to bottom right, #f472b6, #be185d); }
+        
+        .bg-artist-main { background: linear-gradient(to bottom, #d4a373, #faedcd); }
+        .bg-artist-bio  { background: linear-gradient(to bottom, #6b7280, #1f2937); }
+        
+        /* Card hover play button */
+        .group:hover .play-btn-overlay { opacity: 1; transform: translateY(0) scale(1); }
+        .play-btn-overlay { opacity: 0; transform: translateY(8px) scale(0.86); transition: opacity 0.18s ease, transform 0.18s ease; }
+
+        /* Progress bar hover */
+        .progress-track:hover .progress-fill { background: #1ed760 !important; }
+        .progress-track:hover .progress-thumb { opacity: 1 !important; }
+        .vol-track:hover .vol-fill { background: #1ed760 !important; }
+
+        /* Range input hidden */
+        input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; position: absolute; inset: 0; opacity: 0; width: 100%; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col bg-black text-white text-sm selection:bg-spotify-green selection:text-black">
+
+<!-- ═══════════════════════════════════════════════════════ MAIN LAYOUT -->
+<div class="flex flex-1 overflow-hidden p-2 gap-2 pb-[94px]">
+
+  <!-- ═══════════════════════════════════════════════ LEFT SIDEBAR -->
+  <aside class="w-[240px] flex-shrink-0 flex flex-col bg-spotify-base rounded-xl overflow-hidden">
+
+    <!-- Library header -->
+    <div class="p-4 flex items-center justify-between">
+      <div class="flex items-center gap-2 group cursor-pointer text-spotify-silver hover:text-white transition-colors">
+        <span class="material-symbols-outlined font-bold text-2xl">menu_book</span>
+        <span class="font-bold text-base text-white">Your Library</span>
+      </div>
+      <div class="flex items-center gap-1 text-spotify-silver">
+        <button class="hover:text-white hover:bg-spotify-elevated p-1.5 rounded-full transition-all">
+          <span class="material-symbols-outlined text-[20px]">add</span>
+        </button>
+        <button class="hover:text-white hover:bg-spotify-elevated p-1.5 rounded-full transition-all">
+          <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter pills -->
+    <div class="px-4 pb-2 flex gap-2 flex-wrap">
+      <button class="bg-white text-black font-bold px-3 py-1.5 rounded-full text-xs tracking-wide">Playlists</button>
+      <button class="bg-spotify-elevated text-white hover:bg-spotify-card transition-colors px-3 py-1.5 rounded-full text-xs font-semibold">Artists</button>
+      <button class="bg-spotify-elevated text-white hover:bg-spotify-card transition-colors px-3 py-1.5 rounded-full text-xs font-semibold">Albums</button>
+    </div>
+
+    <!-- Search / sort row -->
+    <div class="px-4 py-2 flex items-center justify-between text-spotify-silver text-xs">
+      <button class="hover:bg-spotify-elevated p-1.5 rounded-full hover:text-white transition-all">
+        <span class="material-symbols-outlined text-[18px]">search</span>
+      </button>
+      <button class="flex items-center gap-1 hover:text-white transition-colors font-semibold">
+        <span>Recents</span>
+        <span class="material-symbols-outlined text-[16px]">sort</span>
+      </button>
+    </div>
+
+    <!-- Scrollable list -->
+    <div class="flex-1 overflow-y-auto hide-scrollbar px-2 pb-2 flex flex-col gap-0.5">
+
+      <!-- Liked Songs -->
+      <div class="flex items-center gap-3 p-2 rounded-[6px] hover:bg-spotify-elevated cursor-pointer group transition-colors">
+        <div class="w-12 h-12 flex-shrink-0 rounded-[6px] bg-liked-songs flex items-center justify-center shadow-spotify-medium">
+          <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings:'FILL' 1">favorite</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-white truncate text-[14px]">Liked Songs</span>
+          <span class="text-spotify-silver text-[12px] truncate flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px] text-spotify-green" style="font-variation-settings:'FILL' 1">push_pin</span>
+            Playlist · 145 songs
+          </span>
+        </div>
+      </div>
+
+      <!-- ZAYN -->
+      <div class="flex items-center gap-3 p-2 rounded-[6px] hover:bg-spotify-elevated cursor-pointer group transition-colors">
+        <div class="w-12 h-12 flex-shrink-0 rounded-full bg-card-1 shadow-spotify-medium"></div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-white truncate text-[14px]">ZAYN</span>
+          <span class="text-spotify-silver text-[12px]">Artist</span>
+        </div>
+      </div>
+
+      <!-- Waiting On You -->
+      <div class="flex items-center gap-3 p-2 rounded-[6px] hover:bg-spotify-elevated cursor-pointer group transition-colors">
+        <div class="w-12 h-12 flex-shrink-0 rounded-[6px] bg-card-2 shadow-spotify-medium"></div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-white truncate text-[14px]">Waiting On You</span>
+          <span class="text-spotify-silver text-[12px] truncate">Single · Scarlet Sometimes</span>
+        </div>
+      </div>
+
+      <!-- My top tracks #1 -->
+      <div class="flex items-center gap-3 p-2 rounded-[6px] hover:bg-spotify-elevated cursor-pointer group transition-colors">
+        <div class="w-12 h-12 flex-shrink-0 rounded-[6px] bg-card-3 shadow-spotify-medium"></div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-white truncate text-[14px]">My top tracks playlist</span>
+          <span class="text-spotify-silver text-[12px] truncate">Playlist · Vaibhav Ghoshi</span>
+        </div>
+      </div>
+
+      <!-- My top tracks #2 -->
+      <div class="flex items-center gap-3 p-2 rounded-[6px] hover:bg-spotify-elevated cursor-pointer group transition-colors">
+        <div class="w-12 h-12 flex-shrink-0 rounded-[6px] bg-card-4 shadow-spotify-medium"></div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-white truncate text-[14px]">My top tracks playlist</span>
+          <span class="text-spotify-silver text-[12px] truncate">Playlist · Vaibhav Ghoshi</span>
+        </div>
+      </div>
+
+      <!-- Long name -->
+      <div class="flex items-center gap-3 p-2 rounded-[6px] hover:bg-spotify-elevated cursor-pointer group transition-colors">
+        <div class="w-12 h-12 flex-shrink-0 rounded-[6px] bg-card-5 shadow-spotify-medium"></div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-white truncate text-[14px]">TYLA + RIHANNA + TINASHE + SZA + KEH...</span>
+          <span class="text-spotify-silver text-[12px] truncate">Playlist · VIZIER MIX</span>
+        </div>
+      </div>
+
+      <!-- My Playlist #3 -->
+      <div class="flex items-center gap-3 p-2 rounded-[6px] hover:bg-spotify-elevated cursor-pointer group transition-colors">
+        <div class="w-12 h-12 flex-shrink-0 rounded-[6px] bg-card-6 shadow-spotify-medium"></div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-white truncate text-[14px]">My Playlist #3</span>
+          <span class="text-spotify-silver text-[12px] truncate">Playlist · Vaibhav Ghoshi</span>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════ CENTER MAIN -->
+  <main class="flex-1 bg-spotify-base rounded-xl overflow-hidden flex flex-col relative">
+
+    <!-- Sticky top bar -->
+    <header class="h-16 flex items-center justify-between px-5 sticky top-0 z-10 bg-gradient-to-b from-[#1a1a2e]/95 to-spotify-base/90 backdrop-blur-md flex-shrink-0">
+      <!-- Back / Forward -->
+      <div class="flex items-center gap-2">
+        <button class="w-8 h-8 rounded-full bg-black/70 flex items-center justify-center text-white/70 hover:text-white hover:bg-black transition-all">
+          <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+        </button>
+        <button class="w-8 h-8 rounded-full bg-black/70 flex items-center justify-center text-white/40 cursor-not-allowed" disabled>
+          <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+        </button>
+        <!-- Search pill -->
+        <div class="relative ml-2 flex items-center">
+          <span class="material-symbols-outlined absolute left-3 z-10 text-spotify-silver text-[18px]">search</span>
+          <input
+            class="w-[300px] bg-spotify-elevated border-none text-white text-sm rounded-full pl-10 pr-10 py-2.5 focus:outline-none focus:ring-1 focus:ring-white placeholder-spotify-silver hover:bg-[#2a2a2a] transition-colors"
+            placeholder="What do you want to play?"
+            type="text"
+            style="box-shadow: rgb(18,18,18) 0px 1px 0px, rgb(124,124,124) 0px 0px 0px 1px inset;"
+          />
+          <span class="material-symbols-outlined absolute right-3 text-spotify-silver text-[18px] border-l border-[#4d4d4d] pl-2 cursor-pointer hover:text-white transition-colors">grid_view</span>
+        </div>
+      </div>
+      <!-- Right controls -->
+      <div class="flex items-center gap-2">
+        <button class="bg-white text-black font-bold text-[13px] px-4 py-1.5 rounded-full hover:scale-105 transition-transform shadow-spotify-medium">
+          Explore Premium
+        </button>
+        <button class="bg-spotify-elevated text-white font-semibold text-[13px] px-3 py-1.5 rounded-full flex items-center gap-1.5 hover:bg-spotify-card transition-colors border border-[#4d4d4d]">
+          <span class="material-symbols-outlined text-[16px]">download</span>
+          Install App
+        </button>
+        <button class="w-8 h-8 rounded-full bg-spotify-elevated flex items-center justify-center text-spotify-silver hover:text-white hover:bg-spotify-card transition-all">
+          <span class="material-symbols-outlined text-[20px]">notifications</span>
+        </button>
+        <button class="w-8 h-8 rounded-full bg-spotify-elevated flex items-center justify-center text-spotify-silver hover:text-white hover:bg-spotify-card transition-all">
+          <span class="material-symbols-outlined text-[20px]">people</span>
+        </button>
+        <button class="w-8 h-8 rounded-full bg-spotify-green text-black flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform shadow-spotify-medium">
+          V
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable content -->
+    <div class="flex-1 overflow-y-auto hide-scrollbar px-6 pb-8">
+
+      <!-- Filter pills -->
+      <div class="flex gap-2 mb-5 pt-4 sticky top-0 z-[5] bg-spotify-base pb-2">
+        <button class="bg-white text-black font-bold px-3.5 py-1.5 rounded-full text-sm">All</button>
+        <button class="bg-spotify-elevated text-white hover:bg-spotify-card transition-colors px-3.5 py-1.5 rounded-full text-sm font-semibold">Music</button>
+        <button class="bg-spotify-elevated text-white hover:bg-spotify-card transition-colors px-3.5 py-1.5 rounded-full text-sm font-semibold">Podcasts</button>
+      </div>
+
+      <!-- Recently played 2×3 grid -->
+      <div class="grid grid-cols-2 xl:grid-cols-3 gap-2 mb-8">
+
+        <div class="flex items-center bg-[rgba(255,255,255,0.07)] hover:bg-[rgba(255,255,255,0.13)] transition-colors rounded-[4px] overflow-hidden group cursor-pointer relative pr-4 h-[56px]">
+          <div class="w-14 h-14 bg-liked-songs flex-shrink-0 flex items-center justify-center shadow-md flex-shrink-0">
+            <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings:'FILL' 1">favorite</span>
+          </div>
+          <span class="font-bold ml-4 text-[14px] truncate flex-1">Liked Songs</span>
+          <button class="w-9 h-9 rounded-full bg-spotify-green text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-spotify-heavy absolute right-3 hover:scale-105 hover:bg-[#1fdf64]">
+            <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+          </button>
+        </div>
+
+        <div class="flex items-center bg-[rgba(255,255,255,0.07)] hover:bg-[rgba(255,255,255,0.13)] transition-colors rounded-[4px] overflow-hidden group cursor-pointer relative pr-4 h-[56px]">
+          <div class="w-14 h-14 bg-card-1 flex-shrink-0 shadow-md"></div>
+          <span class="font-bold ml-4 text-[14px] truncate flex-1">Spider-Man Brand New Day...</span>
+          <button class="w-9 h-9 rounded-full bg-spotify-green text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-spotify-heavy absolute right-3 hover:scale-105 hover:bg-[#1fdf64]">
+            <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+          </button>
+        </div>
+
+        <div class="flex items-center bg-[rgba(255,255,255,0.07)] hover:bg-[rgba(255,255,255,0.13)] transition-colors rounded-[4px] overflow-hidden group cursor-pointer relative pr-4 h-[56px]">
+          <div class="w-14 h-14 bg-card-2 flex-shrink-0 shadow-md"></div>
+          <span class="font-bold ml-4 text-[14px] truncate flex-1">Chetpete gaane 🌶️</span>
+          <button class="w-9 h-9 rounded-full bg-spotify-green text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-spotify-heavy absolute right-3 hover:scale-105 hover:bg-[#1fdf64]">
+            <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+          </button>
+        </div>
+
+        <div class="flex items-center bg-[rgba(255,255,255,0.07)] hover:bg-[rgba(255,255,255,0.13)] transition-colors rounded-[4px] overflow-hidden group cursor-pointer relative pr-4 h-[56px]">
+          <div class="w-14 h-14 bg-card-3 flex-shrink-0 shadow-md"></div>
+          <span class="font-bold ml-4 text-[14px] truncate flex-1">Instagram Reels Trending Phon...</span>
+          <button class="w-9 h-9 rounded-full bg-spotify-green text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-spotify-heavy absolute right-3 hover:scale-105 hover:bg-[#1fdf64]">
+            <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+          </button>
+        </div>
+
+        <div class="flex items-center bg-[rgba(255,255,255,0.07)] hover:bg-[rgba(255,255,255,0.13)] transition-colors rounded-[4px] overflow-hidden group cursor-pointer relative pr-4 h-[56px]">
+          <div class="w-14 h-14 bg-card-4 flex-shrink-0 shadow-md"></div>
+          <span class="font-bold ml-4 text-[14px] truncate flex-1">Cigarettes After Sex</span>
+          <button class="w-9 h-9 rounded-full bg-spotify-green text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-spotify-heavy absolute right-3 hover:scale-105 hover:bg-[#1fdf64]">
+            <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+          </button>
+        </div>
+
+        <div class="flex items-center bg-[rgba(255,255,255,0.07)] hover:bg-[rgba(255,255,255,0.13)] transition-colors rounded-[4px] overflow-hidden group cursor-pointer relative pr-4 h-[56px]">
+          <div class="w-14 h-14 bg-card-5 flex-shrink-0 shadow-md"></div>
+          <span class="font-bold ml-4 text-[14px] truncate flex-1">EGO MODE ✦ Scroll to latest...</span>
+          <button class="w-9 h-9 rounded-full bg-spotify-green text-black flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-spotify-heavy absolute right-3 hover:scale-105 hover:bg-[#1fdf64]">
+            <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Pre-save upcoming releases -->
+      <div class="flex items-baseline justify-between mb-4">
+        <h2 class="text-xl font-bold hover:underline cursor-pointer">Pre-save upcoming releases</h2>
+        <span class="text-xs text-spotify-silver font-bold hover:underline cursor-pointer hover:text-white transition-colors tracking-widest uppercase">Show all</span>
+      </div>
+      <div class="flex gap-4 mb-8 overflow-x-auto hide-scrollbar pb-1">
+
+        <!-- Card: Linkin Park -->
+        <div class="bg-spotify-surface hover:bg-spotify-card p-4 rounded-[6px] w-[180px] flex-shrink-0 transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-spotify-medium">
+          <div class="relative w-full aspect-square mb-4 rounded-[4px] overflow-hidden shadow-spotify-medium" style="background: linear-gradient(135deg, #b8860b, #8b6914, #5a4000);">
+            <button class="w-10 h-10 rounded-full bg-spotify-green text-black flex items-center justify-center shadow-spotify-heavy absolute right-2 bottom-2 play-btn-overlay hover:scale-105 hover:bg-[#1fdf64]">
+              <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+            </button>
+          </div>
+          <h3 class="font-bold text-[14px] truncate mb-1">Unshatter Film Soundtrack (Live in...</h3>
+          <p class="text-spotify-silver text-[12px] truncate">Linkin Park</p>
+        </div>
+
+        <!-- Card: Sam Smith -->
+        <div class="bg-spotify-surface hover:bg-spotify-card p-4 rounded-[6px] w-[180px] flex-shrink-0 transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-spotify-medium">
+          <div class="relative w-full aspect-square mb-4 rounded-[4px] overflow-hidden shadow-spotify-medium" style="background: linear-gradient(135deg, #6b7280, #374151, #1f2937);">
+            <button class="w-10 h-10 rounded-full bg-spotify-green text-black flex items-center justify-center shadow-spotify-heavy absolute right-2 bottom-2 play-btn-overlay hover:scale-105 hover:bg-[#1fdf64]">
+              <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+            </button>
+          </div>
+          <h3 class="font-bold text-[14px] truncate mb-1">Hazel Eyes</h3>
+          <p class="text-spotify-silver text-[12px] truncate">Sam Smith</p>
+        </div>
+
+        <!-- Card: Ellie Goulding -->
+        <div class="bg-spotify-surface hover:bg-spotify-card p-4 rounded-[6px] w-[180px] flex-shrink-0 transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-spotify-medium">
+          <div class="relative w-full aspect-square mb-4 rounded-[4px] overflow-hidden shadow-spotify-medium" style="background: linear-gradient(135deg, #c2410c, #9a3412, #7c2d12);">
+            <button class="w-10 h-10 rounded-full bg-spotify-green text-black flex items-center justify-center shadow-spotify-heavy absolute right-2 bottom-2 play-btn-overlay hover:scale-105 hover:bg-[#1fdf64]">
+              <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+            </button>
+          </div>
+          <h3 class="font-bold text-[14px] truncate mb-1">I Know Too Much</h3>
+          <p class="text-spotify-silver text-[12px] truncate">Ellie Goulding</p>
+        </div>
+
+        <!-- Card: Queen -->
+        <div class="bg-spotify-surface hover:bg-spotify-card p-4 rounded-[6px] w-[180px] flex-shrink-0 transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-spotify-medium">
+          <div class="relative w-full aspect-square mb-4 rounded-[4px] overflow-hidden shadow-spotify-medium" style="background: linear-gradient(135deg, #7c3aed, #5b21b6, #3b0764);">
+            <button class="w-10 h-10 rounded-full bg-spotify-green text-black flex items-center justify-center shadow-spotify-heavy absolute right-2 bottom-2 play-btn-overlay hover:scale-105 hover:bg-[#1fdf64]">
+              <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+            </button>
+          </div>
+          <h3 class="font-bold text-[14px] truncate mb-1">Queen Budapest</h3>
+          <p class="text-spotify-silver text-[12px] truncate">Queen</p>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="bg-spotify-surface hover:bg-spotify-card p-4 rounded-[6px] w-[180px] flex-shrink-0 transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-spotify-medium">
+          <div class="relative w-full aspect-square mb-4 rounded-[4px] overflow-hidden shadow-spotify-medium" style="background: linear-gradient(135deg, #0e7490, #155e75, #0c4a6e);">
+            <button class="w-10 h-10 rounded-full bg-spotify-green text-black flex items-center justify-center shadow-spotify-heavy absolute right-2 bottom-2 play-btn-overlay hover:scale-105 hover:bg-[#1fdf64]">
+              <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+            </button>
+          </div>
+          <h3 class="font-bold text-[14px] truncate mb-1">New Waves</h3>
+          <p class="text-spotify-silver text-[12px] truncate">Fred again..</p>
+        </div>
+
+      </div>
+
+      <!-- Episodes section header -->
+      <div class="flex items-baseline justify-between mb-4">
+        <h2 class="text-xl font-bold hover:underline cursor-pointer">Episodes you might like</h2>
+        <span class="text-xs text-spotify-silver font-bold hover:underline cursor-pointer hover:text-white transition-colors tracking-widest uppercase">Show all</span>
+      </div>
+
+      <!-- Episode cards row -->
+      <div class="flex gap-4 overflow-x-auto hide-scrollbar pb-1">
+        <div class="bg-spotify-surface hover:bg-spotify-card p-4 rounded-[6px] w-[180px] flex-shrink-0 transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-spotify-medium">
+          <div class="relative w-full aspect-square mb-4 rounded-full overflow-hidden shadow-spotify-medium" style="background: linear-gradient(135deg, #065f46, #047857);">
+            <button class="w-10 h-10 rounded-full bg-spotify-green text-black flex items-center justify-center shadow-spotify-heavy absolute right-2 bottom-2 play-btn-overlay hover:scale-105">
+              <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+            </button>
+          </div>
+          <h3 class="font-bold text-[14px] truncate mb-1">Episode #142</h3>
+          <p class="text-spotify-silver text-[12px] truncate">Tech Talks Daily</p>
+        </div>
+        <div class="bg-spotify-surface hover:bg-spotify-card p-4 rounded-[6px] w-[180px] flex-shrink-0 transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-spotify-medium">
+          <div class="relative w-full aspect-square mb-4 rounded-full overflow-hidden shadow-spotify-medium" style="background: linear-gradient(135deg, #7f1d1d, #991b1b);">
+            <button class="w-10 h-10 rounded-full bg-spotify-green text-black flex items-center justify-center shadow-spotify-heavy absolute right-2 bottom-2 play-btn-overlay hover:scale-105">
+              <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">play_arrow</span>
+            </button>
+          </div>
+          <h3 class="font-bold text-[14px] truncate mb-1">Deep Dive</h3>
+          <p class="text-spotify-silver text-[12px] truncate">Morning Brew</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════ RIGHT PANEL -->
+  <aside class="w-[280px] flex-shrink-0 flex-col bg-spotify-base rounded-xl overflow-hidden hidden xl:flex">
+
+    <div class="p-4 flex items-center justify-between flex-shrink-0">
+      <span class="font-bold text-sm text-white">Teri Naar</span>
+      <div class="flex items-center gap-1 text-spotify-silver">
+        <button class="hover:text-white hover:bg-spotify-elevated p-1.5 rounded-full transition-all">
+          <span class="material-symbols-outlined text-[18px]">more_horiz</span>
+        </button>
+        <button class="hover:text-white hover:bg-spotify-elevated p-1.5 rounded-full transition-all">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto hide-scrollbar px-4 pb-4">
+      <!-- Artist art placeholder -->
+      <div class="w-full aspect-square bg-artist-main rounded-[8px] mb-4 shadow-spotify-medium"></div>
+
+      <div class="flex items-start justify-between mb-5">
+        <div>
+          <h2 class="text-2xl font-bold hover:underline cursor-pointer leading-tight">Teri Naar</h2>
+          <p class="text-spotify-silver text-sm hover:underline hover:text-white cursor-pointer mt-0.5 transition-colors">Nikk</p>
+        </div>
+        <button class="text-spotify-green hover:scale-110 transition-transform mt-1 flex-shrink-0">
+          <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">favorite</span>
+        </button>
+      </div>
+
+      <!-- About the artist -->
+      <div class="bg-spotify-surface rounded-[8px] p-4 cursor-pointer hover:bg-spotify-card transition-colors group">
+        <div class="font-bold text-sm mb-3">About the artist</div>
+        <div class="h-28 bg-artist-bio rounded-[6px] mb-3 shadow-spotify-medium"></div>
+        <div class="font-bold text-sm hover:underline mb-1">Nikk</div>
+        <div class="flex items-center justify-between">
+          <span class="text-spotify-silver text-[12px]">1,234,567 monthly listeners</span>
+          <button class="border border-spotify-silver rounded-full px-3 py-0.5 text-[12px] font-bold hover:border-white hover:text-white transition-colors">
+            Follow
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- end main layout -->
+
+<!-- ═══════════════════════════════════════ BOTTOM PLAYER BAR -->
+<footer class="fixed bottom-0 left-0 w-full h-[90px] bg-spotify-surface flex items-center justify-between px-4 z-50" style="border-top: 1px solid #2a2a2a;">
+
+  <!-- LEFT: Track info -->
+  <div class="flex items-center gap-3 w-[30%] min-w-[200px]">
+    <div class="w-14 h-14 bg-artist-main rounded-[4px] flex-shrink-0 shadow-spotify-medium"></div>
+    <div class="flex flex-col min-w-0">
+      <a class="text-[14px] font-bold hover:underline truncate text-white cursor-pointer">Teri Naar</a>
+      <a class="text-[12px] text-spotify-silver hover:underline hover:text-white truncate cursor-pointer transition-colors">Nikk</a>
+    </div>
+    <div class="flex items-center gap-1.5 ml-1 flex-shrink-0">
+      <button class="text-spotify-green hover:scale-110 transition-transform">
+        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1">favorite</span>
+      </button>
+      <button class="text-spotify-silver hover:text-white transition-colors">
+        <span class="material-symbols-outlined text-[18px]">picture_in_picture_alt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CENTER: Controls + progress -->
+  <div class="flex flex-col items-center max-w-[722px] w-[40%] px-2 gap-1.5">
+    <div class="flex items-center gap-5">
+      <button class="text-spotify-green hover:scale-110 transition-all relative" title="Shuffle on">
+        <span class="material-symbols-outlined text-[18px]">shuffle</span>
+        <span class="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-1 h-1 bg-spotify-green rounded-full"></span>
+      </button>
+      <button class="text-spotify-silver hover:text-white transition-colors hover:scale-110">
+        <span class="material-symbols-outlined text-[24px]" style="font-variation-settings:'FILL' 1">skip_previous</span>
+      </button>
+      <button class="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform shadow-spotify-medium">
+        <span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1">play_arrow</span>
+      </button>
+      <button class="text-spotify-silver hover:text-white transition-colors hover:scale-110">
+        <span class="material-symbols-outlined text-[24px]" style="font-variation-settings:'FILL' 1">skip_next</span>
+      </button>
+      <button class="text-spotify-silver hover:text-white transition-colors">
+        <span class="material-symbols-outlined text-[18px]">repeat</span>
+      </button>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="w-full flex items-center gap-2 text-[11px] text-spotify-silver group/bar">
+      <span class="min-w-[32px] text-right tabular-nums">1:01</span>
+      <div class="progress-track flex-1 h-1 bg-[#535353] rounded-full relative cursor-pointer">
+        <div class="progress-fill absolute top-0 left-0 h-full w-[40%] bg-white rounded-full transition-colors duration-150"></div>
+        <div class="progress-thumb absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 transition-opacity duration-150 pointer-events-none" style="left: calc(40% - 6px)"></div>
+        <input type="range" min="0" max="100" value="40" class="absolute inset-0 w-full opacity-0 cursor-pointer h-full" style="height:100%"/>
+      </div>
+      <span class="min-w-[32px] tabular-nums">2:39</span>
+    </div>
+  </div>
+
+  <!-- RIGHT: Extra controls -->
+  <div class="flex items-center justify-end gap-2 w-[30%] min-w-[200px] text-spotify-silver">
+    <button class="hover:text-white transition-colors p-1" title="Lyrics">
+      <span class="material-symbols-outlined text-[18px]">lyrics</span>
+    </button>
+    <button class="hover:text-white transition-colors p-1" title="Queue">
+      <span class="material-symbols-outlined text-[18px]">queue_music</span>
+    </button>
+    <button class="hover:text-white transition-colors p-1" title="Connect to a device">
+      <span class="material-symbols-outlined text-[18px]">devices</span>
+    </button>
+    <div class="flex items-center gap-1.5">
+      <button class="hover:text-white transition-colors" title="Volume">
+        <span class="material-symbols-outlined text-[18px]">volume_up</span>
+      </button>
+      <div class="vol-track w-[93px] h-1 bg-[#535353] rounded-full relative cursor-pointer">
+        <div class="vol-fill absolute top-0 left-0 h-full w-[70%] bg-white rounded-full transition-colors duration-150"></div>
+        <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 transition-opacity duration-150 pointer-events-none vol-thumb" style="left: calc(70% - 6px)"></div>
+        <input type="range" min="0" max="100" value="70" class="absolute inset-0 opacity-0 cursor-pointer w-full" style="height:100%"/>
+      </div>
+    </div>
+    <button class="hover:text-white transition-colors p-1" title="Full screen">
+      <span class="material-symbols-outlined text-[18px]">open_in_full</span>
+    </button>
+  </div>
+
+</footer>
+
+<script>
+  // Progress bar interactivity
+  document.querySelectorAll('.progress-track input[type=range]').forEach(input => {
+    input.addEventListener('input', e => {
+      const pct = e.target.value;
+      const track = e.target.closest('.progress-track');
+      track.querySelector('.progress-fill').style.width = pct + '%';
+      track.querySelector('.progress-thumb').style.left = `calc(${pct}% - 6px)`;
+    });
+  });
+  // Volume bar interactivity
+  document.querySelectorAll('.vol-track input[type=range]').forEach(input => {
+    input.addEventListener('input', e => {
+      const pct = e.target.value;
+      const track = e.target.closest('.vol-track');
+      track.querySelector('.vol-fill').style.width = pct + '%';
+      if (track.querySelector('.vol-thumb')) {
+        track.querySelector('.vol-thumb').style.left = `calc(${pct}% - 6px)`;
+      }
+    });
+  });
+  // Hover show thumb on progress
+  document.querySelectorAll('.progress-track').forEach(track => {
+    track.addEventListener('mouseenter', () => { track.querySelector('.progress-thumb').style.opacity = 1; track.querySelector('.progress-fill').style.background = '#1ed760'; });
+    track.addEventListener('mouseleave', () => { track.querySelector('.progress-thumb').style.opacity = 0; track.querySelector('.progress-fill').style.background = '#fff'; });
+  });
+  document.querySelectorAll('.vol-track').forEach(track => {
+    track.addEventListener('mouseenter', () => { track.querySelector('.vol-fill').style.background = '#1ed760'; if(track.querySelector('.vol-thumb')) track.querySelector('.vol-thumb').style.opacity = 1; });
+    track.addEventListener('mouseleave', () => { track.querySelector('.vol-fill').style.background = '#fff'; if(track.querySelector('.vol-thumb')) track.querySelector('.vol-thumb').style.opacity = 0; });
+  });
+</script>
+</body></html>
