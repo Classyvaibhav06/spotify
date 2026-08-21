@@ -73,13 +73,27 @@ app = FastAPI(
 )
 
 # Configure CORS
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173")
+origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins if origins else ["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add defensive security headers to all HTTP responses."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 
 def get_client_ip(request: Request) -> str:
@@ -97,7 +111,7 @@ async def check_rate_limit_dep(request: Request, endpoint: str):
     if not allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Rate limit exceeded. Please retry after {wait_time:.1f}s",
+            detail="Rate limit exceeded. Please slow down.",
             headers={"Retry-After": str(int(wait_time) + 1)},
         )
 
@@ -165,7 +179,7 @@ async def search_tracks(
         return SearchResult(**result_dict)
     except Exception as e:
         logger.error(f"Search failed for '{q}': {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Search request failed. Please try again.")
 
 
 @app.get(
@@ -211,7 +225,7 @@ async def get_video_details(
         return VideoDetailResponse(**response_data)
     except Exception as e:
         logger.error(f"Failed to fetch details for {video_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Video detail extraction error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Video details extraction error.")
 
 
 @app.get(
@@ -255,7 +269,7 @@ async def get_stream(
         return StreamResponse(**stream_data)
     except Exception as e:
         logger.error(f"Failed to get stream for {video_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Stream extraction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Audio stream extraction error.")
 
 
 @app.get("/api/trending", tags=["Music"])
