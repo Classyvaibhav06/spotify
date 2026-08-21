@@ -11,7 +11,10 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.media.app.NotificationCompat.MediaStyle;
 
 public class MediaPlaybackService extends Service {
 
@@ -19,6 +22,7 @@ public class MediaPlaybackService extends Service {
     public static final int NOTIFICATION_ID = 101;
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
+    private MediaSessionCompat mediaSession;
 
     @Override
     public void onCreate() {
@@ -26,14 +30,28 @@ public class MediaPlaybackService extends Service {
 
         createNotificationChannel();
 
+        // Initialize Android MediaSession
+        mediaSession = new MediaSessionCompat(this, "SpotifyMediaSession");
+        mediaSession.setFlags(
+                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
+                MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
+        );
+
+        PlaybackStateCompat state = new PlaybackStateCompat.Builder()
+                .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
+                .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
+                .build();
+        mediaSession.setPlaybackState(state);
+        mediaSession.setActive(true);
+
         // CPU Wake Lock
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (powerManager != null) {
             wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Spotify::MediaPlaybackLock");
-            wakeLock.acquire(24 * 60 * 60 * 1000L); // 24 hours max
+            wakeLock.acquire(24 * 60 * 60 * 1000L);
         }
 
-        // WiFi High-Perf Lock so streaming never throttles when screen locks
+        // WiFi High-Perf Lock
         try {
             WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             if (wifiManager != null) {
@@ -59,12 +77,15 @@ public class MediaPlaybackService extends Service {
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Spotify Music")
-                .setContentText("Streaming audio in background")
+                .setContentText("Playing in background")
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setStyle(new MediaStyle()
+                        .setMediaSession(mediaSession.getSessionToken())
+                        .setShowActionsInCompactView())
                 .build();
 
         startForeground(NOTIFICATION_ID, notification);
@@ -92,6 +113,10 @@ public class MediaPlaybackService extends Service {
 
     @Override
     public void onDestroy() {
+        if (mediaSession != null) {
+            mediaSession.setActive(false);
+            mediaSession.release();
+        }
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
         }
