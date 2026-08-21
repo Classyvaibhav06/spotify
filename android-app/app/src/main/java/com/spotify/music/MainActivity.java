@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -28,6 +29,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Start background media foreground service
+        startBackgroundService();
 
         webView = findViewById(R.id.webView);
         webView.setBackgroundColor(0xFF000000);
@@ -106,19 +110,31 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Handle native back button navigation
+        // Handle native back button: minimize app instead of killing playback
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (webView.canGoBack()) {
                     webView.goBack();
                 } else {
-                    finish();
+                    moveTaskToBack(true);
                 }
             }
         });
 
         webView.loadUrl(APP_URL);
+    }
+
+    private void startBackgroundService() {
+        try {
+            Intent serviceIntent = new Intent(this, MediaPlaybackService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     @Override
@@ -136,13 +152,21 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        webView.onResume();
+        if (webView != null) {
+            webView.resumeTimers();
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        webView.onPause();
+        // Do NOT call webView.onPause() or pauseTimers() so audio continues playing in background!
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Keep media playing in background
     }
 
     @Override
