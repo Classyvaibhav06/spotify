@@ -68,9 +68,9 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="px-6 py-6 text-white pb-28 min-h-full">
-      {/* ── Search Input Bar ── */}
-      <div className="relative mb-8 max-w-xl">
+    <div className="px-4 sm:px-6 py-4 text-white pb-36 md:pb-28 min-h-full">
+      {/* ── Search Input Bar (Shown only on desktop; mobile uses sticky top header) ── */}
+      <div className="relative mb-6 max-w-xl hidden md:block">
         <HiSearch size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
@@ -78,7 +78,6 @@ export default function SearchPage() {
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           className="w-full bg-[#242424] hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] text-white text-sm rounded-full py-3 pl-12 pr-10 outline-none border border-transparent focus:border-white transition-all shadow-lg"
-          autoFocus
         />
         {loading && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
@@ -87,18 +86,19 @@ export default function SearchPage() {
 
       {/* ── Live Search Results Tracklist ── */}
       {results.length > 0 && (
-        <div className="mb-10 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black">Top Results for &quot;{query}&quot;</h2>
+        <div className="mb-8 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg sm:text-2xl font-black truncate">Top Results for &quot;{query}&quot;</h2>
             <button
               onClick={() => {
                 if (results.length > 0) play(results[0], results);
               }}
-              className="flex items-center gap-2 bg-green-500 hover:bg-green-400 text-black px-5 py-2 rounded-full font-bold text-xs shadow-lg transition-transform hover:scale-105"
+              className="flex items-center gap-1.5 bg-green-500 hover:bg-green-400 text-black px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs shadow-lg transition-transform hover:scale-105 flex-shrink-0"
             >
-              <MdPlayArrow size={20} /> Play All
+              <MdPlayArrow size={18} /> Play All
             </button>
           </div>
+
 
           <div className="flex flex-col gap-2">
             {results.map((track, i) => {

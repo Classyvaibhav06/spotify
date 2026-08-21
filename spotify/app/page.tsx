@@ -470,20 +470,21 @@ export default function Home() {
         {/* ═══════════════════════════════ CENTER MAIN AREA */}
         <main className="flex-1 bg-[#121212] rounded-xl overflow-hidden flex flex-col relative">
           {/* Sticky Top Bar */}
-          <header className="h-16 flex items-center justify-between px-5 sticky top-0 z-10 bg-gradient-to-b from-[#1a1a2e]/95 to-[#121212]/90 backdrop-blur-md flex-shrink-0">
-            <div className="flex items-center gap-2">
+          <header className="h-16 flex items-center justify-between px-3 sm:px-5 sticky top-0 z-10 bg-gradient-to-b from-[#1a1a2e]/95 to-[#121212]/90 backdrop-blur-md flex-shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 mr-2">
               <button
                 onClick={() => setActivePage("home")}
-                className="w-9 h-9 rounded-full bg-black/70 flex items-center justify-center text-white/70 hover:text-white hover:bg-black transition-all"
+                className="w-9 h-9 rounded-full bg-black/70 flex items-center justify-center text-white/70 hover:text-white hover:bg-black transition-all flex-shrink-0"
                 title="Home"
               >
                 <MdHome size={22} />
               </button>
               {/* Pill Search Input with Spotify Autocomplete & Recent Searches Popover */}
-              <div className="relative ml-2 flex items-center">
-                <div className="flex items-center bg-[#1f1f1f] hover:bg-[#2a2a2a] focus-within:bg-[#2a2a2a] focus-within:ring-1 focus-within:ring-white rounded-full px-3 py-1.5 w-[360px] md:w-[480px] transition-all border border-transparent">
-                  <MdSearch size={20} className="text-[#b3b3b3] mr-2 flex-shrink-0" />
+              <div className="relative flex items-center flex-1 max-w-[210px] xs:max-w-[280px] sm:max-w-[360px] md:max-w-[480px]">
+                <div className="flex items-center bg-[#1f1f1f] hover:bg-[#2a2a2a] focus-within:bg-[#2a2a2a] focus-within:ring-1 focus-within:ring-white rounded-full px-2.5 sm:px-3 py-1.5 w-full transition-all border border-transparent">
+                  <MdSearch size={20} className="text-[#b3b3b3] mr-1.5 sm:mr-2 flex-shrink-0" />
                   <input
+
                     ref={searchInputRef}
                     value={searchQuery}
                     onFocus={() => {
@@ -822,7 +823,8 @@ export default function Home() {
           </header>
 
           {/* Dynamic Page Views */}
-          <div className="flex-1 overflow-y-auto hide-scrollbar px-6 pb-8">
+          <div className="flex-1 overflow-y-auto hide-scrollbar px-3 sm:px-6 pb-36 md:pb-8">
+
             {/* HOME VIEW */}
             {activePage === "home" && (
               <div className="space-y-10 pt-4">
@@ -1236,8 +1238,9 @@ export default function Home() {
       <ContextMenu />
 
 
-      {/* ════════════════════════════════════ FIXED BOTTOM PLAYER BAR */}
-      <footer className="fixed bottom-0 left-0 w-full h-[90px] bg-[#181818] flex items-center justify-between px-4 z-40 border-t border-[#2a2a2a]">
+      {/* ════════════════════════════════════ FIXED BOTTOM PLAYER BAR (Desktop Only) */}
+      <footer className="fixed bottom-0 left-0 w-full h-[90px] bg-[#181818] hidden md:flex items-center justify-between px-4 z-40 border-t border-[#2a2a2a]">
+
         {/* LEFT: Track Info */}
         <div className="flex items-center gap-3 w-[30%] min-w-[200px]">
           {currentTrack?.coverUrl ? (
