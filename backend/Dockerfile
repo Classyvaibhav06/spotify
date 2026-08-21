@@ -7,12 +7,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install python dependencies (supports build from root or backend)
+COPY requirements.txt* backend/requirements.txt* ./
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; \
+    elif [ -f backend/requirements.txt ]; then pip install --no-cache-dir -r backend/requirements.txt; fi
 
 # Copy application code
-COPY . .
+COPY backend/. . 2>/dev/null || COPY . .
+
 
 # Expose port
 EXPOSE 8000
