@@ -172,8 +172,30 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Click & Touch outside listener for search popup panel
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setShowRecentPopup(false);
+      }
+    };
+    if (showRecentPopup) {
+      document.addEventListener("mousedown", handleOutside);
+      document.addEventListener("touchstart", handleOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [showRecentPopup]);
 
   const [recentItems, setRecentItems] = useState([
+
     {
       id: "rec-1",
       title: "Spider-Man Brand New Day Soundtrack 2026",
@@ -480,11 +502,11 @@ export default function Home() {
                 <MdHome size={22} />
               </button>
               {/* Pill Search Input with Spotify Autocomplete & Recent Searches Popover */}
-              <div className="relative flex items-center flex-1 max-w-[210px] xs:max-w-[280px] sm:max-w-[360px] md:max-w-[480px]">
-                <div className="flex items-center bg-[#1f1f1f] hover:bg-[#2a2a2a] focus-within:bg-[#2a2a2a] focus-within:ring-1 focus-within:ring-white rounded-full px-2.5 sm:px-3 py-1.5 w-full transition-all border border-transparent">
-                  <MdSearch size={20} className="text-[#b3b3b3] mr-1.5 sm:mr-2 flex-shrink-0" />
-                  <input
+              <div ref={searchContainerRef} className="relative flex items-center flex-1 max-w-[260px] xs:max-w-[320px] sm:max-w-[380px] md:max-w-[480px]">
 
+                <div className="flex items-center bg-[#1f1f1f] hover:bg-[#2a2a2a] focus-within:bg-[#2a2a2a] focus-within:ring-1 focus-within:ring-white rounded-full px-3 py-1.5 w-full transition-all border border-transparent">
+                  <MdSearch size={20} className="text-[#b3b3b3] mr-2 flex-shrink-0" />
+                  <input
                     ref={searchInputRef}
                     value={searchQuery}
                     onFocus={() => {
@@ -502,7 +524,7 @@ export default function Home() {
                         setShowRecentPopup(false);
                       }
                     }}
-                    className="bg-transparent text-white text-sm outline-none w-full placeholder-[#b3b3b3]"
+                    className="bg-transparent text-white text-sm outline-none w-full placeholder-[#b3b3b3] truncate"
                     placeholder="What do you want to play?"
                     type="text"
                   />
@@ -527,7 +549,7 @@ export default function Home() {
                     </div>
                   )}
 
-                  <span className="material-symbols-outlined text-[18px] text-[#b3b3b3] hover:text-white cursor-pointer border-l border-[#383838] pl-2 flex-shrink-0">
+                  <span className="material-symbols-outlined text-[18px] text-[#b3b3b3] hover:text-white cursor-pointer border-l border-[#383838] pl-2 flex-shrink-0 hidden md:inline-flex">
                     vertical_split
                   </span>
                 </div>
@@ -539,7 +561,8 @@ export default function Home() {
                       className="fixed inset-0 z-40"
                       onClick={() => setShowRecentPopup(false)}
                     />
-                    <div className="absolute top-[calc(100%+8px)] left-0 w-[440px] md:w-[480px] bg-[#282828] text-white rounded-2xl p-2.5 shadow-2xl z-50 border border-[#383838] flex flex-col gap-1 max-h-[520px] overflow-y-auto hide-scrollbar">
+                    <div className="fixed sm:absolute top-[68px] sm:top-[calc(100%+8px)] inset-x-3 sm:inset-x-auto sm:left-0 w-auto sm:w-[440px] md:w-[480px] bg-[#282828] text-white rounded-2xl p-2.5 sm:p-3 shadow-2xl z-50 border border-[#383838] flex flex-col gap-1 max-h-[75vh] sm:max-h-[520px] overflow-y-auto hide-scrollbar">
+
                       
                       {/* CASE A: USER IS TYPING A QUERY (Show Keyword Suggestions + Live Results) */}
                       {searchQuery ? (
@@ -706,14 +729,15 @@ export default function Home() {
             </div>
 
             {/* Top Bar Right Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <button
                 onClick={toggleShortcuts}
-                className="w-8 h-8 rounded-full bg-[#1f1f1f] flex items-center justify-center text-[#b3b3b3] hover:text-white hover:bg-[#252525] transition-all"
+                className="w-8 h-8 rounded-full bg-[#1f1f1f] hidden md:flex items-center justify-center text-[#b3b3b3] hover:text-white hover:bg-[#252525] transition-all"
                 title="Keyboard Shortcuts (?)"
               >
                 <MdKeyboard size={18} />
               </button>
+
 
               {status === "authenticated" && session?.user ? (
                 <div className="relative" ref={profileMenuRef}>
@@ -829,7 +853,8 @@ export default function Home() {
             {activePage === "home" && (
               <div className="space-y-10 pt-4">
                 {/* Top Filter Pills */}
-                <div className="flex gap-2 sticky top-0 z-[5] bg-[#121212] py-2">
+                <div className="flex gap-2 sticky top-0 z-[5] bg-[#121212] py-2 overflow-x-auto hide-scrollbar">
+
                   {(["All", "Music", "Podcasts"] as const).map((filter) => (
                     <button
                       key={filter}
