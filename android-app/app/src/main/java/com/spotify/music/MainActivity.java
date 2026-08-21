@@ -16,13 +16,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String APP_URL = "https://spotify-theta-ten.vercel.app/";
     private WebView webView;
-    private SwipeRefreshLayout swipeRefresh;
     private ValueCallback<Uri[]> filePathCallback;
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -31,13 +29,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        swipeRefresh = findViewById(R.id.swipeRefresh);
         webView = findViewById(R.id.webView);
-
-        // Dark theme background
-        swipeRefresh.setBackgroundColor(0xFF000000);
-        swipeRefresh.setColorSchemeColors(0xFF1ED760);
         webView.setBackgroundColor(0xFF000000);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -58,18 +52,18 @@ public class MainActivity extends AppCompatActivity {
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
 
-        // Hardware acceleration
+        // Hardware acceleration for 60fps animations
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                // Handle Google OAuth or in-app links
+                // Keep Google auth & Spotify routes inside the WebView
                 if (url.startsWith("https://accounts.google.com") || 
                     url.startsWith("https://spotify-theta-ten.vercel.app") ||
                     url.contains("spotify-production-3caa.up.railway.app")) {
-                    return false; // Load inside WebView
+                    return false;
                 }
                 // External links open in default browser
                 try {
@@ -89,7 +83,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                swipeRefresh.setRefreshing(false);
             }
         });
 
@@ -113,9 +106,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        swipeRefresh.setOnRefreshListener(() -> webView.reload());
-
-        // Handle back button navigation
+        // Handle native back button navigation
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
