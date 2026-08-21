@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -17,6 +18,7 @@ public class MediaPlaybackService extends Service {
     public static final String CHANNEL_ID = "spotify_playback_channel";
     public static final int NOTIFICATION_ID = 101;
     private PowerManager.WakeLock wakeLock;
+    private WifiManager.WifiLock wifiLock;
 
     @Override
     public void onCreate() {
@@ -24,11 +26,21 @@ public class MediaPlaybackService extends Service {
 
         createNotificationChannel();
 
+        // CPU Wake Lock
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (powerManager != null) {
             wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Spotify::MediaPlaybackLock");
-            wakeLock.acquire(12 * 60 * 60 * 1000L); // 12 hours max
+            wakeLock.acquire(24 * 60 * 60 * 1000L); // 24 hours max
         }
+
+        // WiFi High-Perf Lock so streaming never throttles when screen locks
+        try {
+            WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wifiManager != null) {
+                wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "Spotify::WifiLock");
+                wifiLock.acquire();
+            }
+        } catch (Exception ignored) {}
     }
 
     @Override
@@ -46,8 +58,8 @@ public class MediaPlaybackService extends Service {
         );
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Spotify")
-                .setContentText("Playing in background")
+                .setContentTitle("Spotify Music")
+                .setContentText("Streaming audio in background")
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
@@ -82,6 +94,9 @@ public class MediaPlaybackService extends Service {
     public void onDestroy() {
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
+        }
+        if (wifiLock != null && wifiLock.isHeld()) {
+            wifiLock.release();
         }
         super.onDestroy();
     }

@@ -21,6 +21,20 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
 
     private static final String APP_URL = "https://spotify-theta-ten.vercel.app/";
+    private static final String BACKGROUND_PLAYBACK_INJECTION = 
+        "(function() {" +
+        "  try {" +
+        "    Object.defineProperty(document, 'hidden', { get: function() { return false; }, configurable: true });" +
+        "    Object.defineProperty(document, 'visibilityState', { get: function() { return 'visible'; }, configurable: true });" +
+        "    Object.defineProperty(document, 'webkitHidden', { get: function() { return false; }, configurable: true });" +
+        "    Object.defineProperty(document, 'webkitVisibilityState', { get: function() { return 'visible'; }, configurable: true });" +
+        "    var block = function(e) { if (e) e.stopImmediatePropagation(); };" +
+        "    window.addEventListener('visibilitychange', block, true);" +
+        "    document.addEventListener('visibilitychange', block, true);" +
+        "    window.addEventListener('webkitvisibilitychange', block, true);" +
+        "  } catch(e) {}" +
+        "})();";
+
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
 
@@ -51,6 +65,10 @@ public class MainActivity extends AppCompatActivity {
         settings.setSupportZoom(false);
         settings.setDisplayZoomControls(false);
 
+        // Custom User-Agent to avoid YouTube mobile background video pausing restrictions
+        String defaultUa = settings.getUserAgentString();
+        settings.setUserAgentString(defaultUa + " SpotifyAndroidApp/1.0");
+
         // Keep cookies synced for Google OAuth
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -66,7 +84,8 @@ public class MainActivity extends AppCompatActivity {
                 // Keep Google auth & Spotify routes inside the WebView
                 if (url.startsWith("https://accounts.google.com") || 
                     url.startsWith("https://spotify-theta-ten.vercel.app") ||
-                    url.contains("spotify-production-3caa.up.railway.app")) {
+                    url.contains("spotify-production-3caa.up.railway.app") ||
+                    url.contains("youtube.com")) {
                     return false;
                 }
                 // External links open in default browser
@@ -82,11 +101,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
+                view.evaluateJavascript(BACKGROUND_PLAYBACK_INJECTION, null);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                view.evaluateJavascript(BACKGROUND_PLAYBACK_INJECTION, null);
             }
         });
 
@@ -154,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         if (webView != null) {
             webView.resumeTimers();
+            webView.evaluateJavascript(BACKGROUND_PLAYBACK_INJECTION, null);
         }
     }
 
@@ -161,12 +183,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         // Do NOT call webView.onPause() or pauseTimers() so audio continues playing in background!
+        if (webView != null) {
+            webView.evaluateJavascript(BACKGROUND_PLAYBACK_INJECTION, null);
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        // Keep media playing in background
+        if (webView != null) {
+            webView.evaluateJavascript(BACKGROUND_PLAYBACK_INJECTION, null);
+        }
     }
 
     @Override

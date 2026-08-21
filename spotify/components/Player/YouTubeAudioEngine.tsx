@@ -26,6 +26,22 @@ export default function YouTubeAudioEngine() {
   const isApiReadyRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Prevent mobile browser / Android WebView from pausing YouTube audio when backgrounded or locked
+  useEffect(() => {
+    try {
+      Object.defineProperty(document, "hidden", { get: () => false, configurable: true });
+      Object.defineProperty(document, "visibilityState", { get: () => "visible", configurable: true });
+      Object.defineProperty(document, "webkitHidden", { get: () => false, configurable: true });
+      Object.defineProperty(document, "webkitVisibilityState", { get: () => "visible", configurable: true });
+      const blockVisibility = (e: Event) => e.stopImmediatePropagation();
+      window.addEventListener("visibilitychange", blockVisibility, true);
+      document.addEventListener("visibilitychange", blockVisibility, true);
+      window.addEventListener("webkitvisibilitychange", blockVisibility, true);
+    } catch (err) {
+      // Ignore
+    }
+  }, []);
+
   // Load YouTube IFrame API script
   useEffect(() => {
     if (window.YT && window.YT.Player) {
@@ -44,6 +60,7 @@ export default function YouTubeAudioEngine() {
       initPlayer();
     };
   }, []);
+
 
   // Initialize YouTube Player
   function initPlayer() {
