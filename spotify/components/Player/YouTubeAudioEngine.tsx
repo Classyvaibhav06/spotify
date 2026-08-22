@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePlayerStore } from "@/store/playerStore";
+import { useLibraryStore } from "@/store/libraryStore";
 import { useUIStore } from "@/store/useUIStore";
 
 declare global {
@@ -10,6 +11,7 @@ declare global {
     YT?: any;
   }
 }
+
 
 export default function YouTubeAudioEngine() {
   const {
@@ -179,6 +181,13 @@ export default function YouTubeAudioEngine() {
 
     // If track is pending search resolution
     if (targetVideoId && targetVideoId.startsWith("query:")) {
+      // Immediately pause to prevent previous video from playing during the 200ms lookup
+      try {
+        if (playerRef.current && typeof playerRef.current.pauseVideo === "function") {
+          playerRef.current.pauseVideo();
+        }
+      } catch (pErr) {}
+
       const searchQuery = decodeURIComponent(targetVideoId.replace("query:", ""));
       fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
         .then((res) => res.json())
@@ -196,6 +205,20 @@ export default function YouTubeAudioEngine() {
                   }
                 : s.currentTrack,
           }));
+
+          // Sync resolved YouTube cover art back to the playlist track so the playlist list and bottom bar match
+          if (matchCover) {
+            useLibraryStore.setState((lib) => ({
+              playlists: lib.playlists.map((pl) => ({
+                ...pl,
+                tracks: pl.tracks.map((t) =>
+                  t.id === currentTrack.id
+                    ? { ...t, youtubeId: matchId, coverUrl: matchCover }
+                    : t
+                ),
+              })),
+            }));
+          }
 
           if (playerRef.current && typeof playerRef.current.loadVideoById === "function") {
             playerRef.current.loadVideoById(matchId);
@@ -217,6 +240,7 @@ export default function YouTubeAudioEngine() {
         });
       return;
     }
+
 
 
     if (playerRef.current && targetVideoId) {
