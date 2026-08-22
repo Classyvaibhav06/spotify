@@ -123,10 +123,19 @@ export default function YouTubeAudioEngine() {
         .then((res) => res.json())
         .then((data) => {
           const matchId = data?.tracks?.[0]?.youtubeId || "4NRXx6U8ABQ";
-          currentTrack.youtubeId = matchId;
-          if (data?.tracks?.[0]?.coverUrl && !currentTrack.coverUrl) {
-            currentTrack.coverUrl = data.tracks[0].coverUrl;
-          }
+          const matchCover = data?.tracks?.[0]?.coverUrl;
+          
+          usePlayerStore.setState((s) => ({
+            currentTrack:
+              s.currentTrack && s.currentTrack.id === currentTrack.id
+                ? {
+                    ...s.currentTrack,
+                    youtubeId: matchId,
+                    coverUrl: matchCover || s.currentTrack.coverUrl,
+                  }
+                : s.currentTrack,
+          }));
+
           if (playerRef.current && typeof playerRef.current.loadVideoById === "function") {
             playerRef.current.loadVideoById(matchId);
             if (isPlaying) {
@@ -140,7 +149,6 @@ export default function YouTubeAudioEngine() {
         })
         .catch((err) => {
           console.warn("Dynamic track resolution error:", err);
-          // Fallback to direct load
           if (playerRef.current?.loadVideoById) {
             playerRef.current.loadVideoById("4NRXx6U8ABQ");
             if (isPlaying) playerRef.current.playVideo?.();
@@ -148,6 +156,7 @@ export default function YouTubeAudioEngine() {
         });
       return;
     }
+
 
     if (playerRef.current && targetVideoId) {
       try {

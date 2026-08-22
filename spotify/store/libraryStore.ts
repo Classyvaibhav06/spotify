@@ -221,23 +221,35 @@ function loadInitialPlaylists(): Playlist[] {
   const stored = localStorage.getItem("sp_playlists");
   if (!stored) return defaultPlaylists;
   try {
-    const parsed: Playlist[] = JSON.parse(stored);
-    // If stored playlists don't have coverUrls, merge default coverUrls
-    return parsed.map((p) => {
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed) || parsed.length === 0) return defaultPlaylists;
+    return parsed.map((p: any) => {
+      const pTracks = Array.isArray(p.tracks) ? p.tracks : [];
       const def = defaultPlaylists.find((d) => d.id === p.id);
       return {
-        ...p,
-        coverUrl: p.coverUrl || def?.coverUrl || (p.tracks.length > 0 ? p.tracks[0].coverUrl : undefined),
-        tracks: p.tracks.map((t) => {
-          const defT = def?.tracks.find((dt) => dt.id === t.id);
+        id: p.id || `pl-${Date.now()}`,
+        name: p.name || "My Playlist",
+        description: p.description || "",
+        coverUrl: p.coverUrl || def?.coverUrl || (pTracks.length > 0 ? pTracks[0].coverUrl : undefined),
+        gradient: p.gradient || "linear-gradient(135deg, #1ed760, #121212)",
+        createdAt: p.createdAt || new Date().toISOString(),
+        tracks: pTracks.map((t: any) => {
+          const defT = def?.tracks?.find((dt) => dt.id === t.id);
           return {
-            ...t,
+            id: t.id || `track-${Date.now()}`,
+            title: t.title || "Unknown Title",
+            artist: t.artist || "Unknown Artist",
+            album: t.album || "Unknown Album",
+            duration: typeof t.duration === "number" ? t.duration : 180,
+            youtubeId: t.youtubeId || "vB1o7X-y68A",
             coverUrl: t.coverUrl || defT?.coverUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop&q=80",
+            bgGradient: t.bgGradient || "linear-gradient(135deg, #1e1b4b, #312e81)",
           };
         }),
       };
     });
   } catch (e) {
+    console.warn("Corrupted sp_playlists in localStorage, using defaults:", e);
     return defaultPlaylists;
   }
 }
@@ -247,18 +259,26 @@ function loadInitialLiked(): Track[] {
   const stored = localStorage.getItem("sp_liked");
   if (!stored) return defaultPlaylists[0].tracks;
   try {
-    const parsed: Track[] = JSON.parse(stored);
-    return parsed.map((t) => {
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed) || parsed.length === 0) return defaultPlaylists[0].tracks;
+    return parsed.map((t: any) => {
       const defT = defaultPlaylists[0].tracks.find((dt) => dt.id === t.id);
       return {
-        ...t,
+        id: t.id || `track-${Date.now()}`,
+        title: t.title || "Unknown Title",
+        artist: t.artist || "Unknown Artist",
+        album: t.album || "Unknown Album",
+        duration: typeof t.duration === "number" ? t.duration : 180,
+        youtubeId: t.youtubeId || "vB1o7X-y68A",
         coverUrl: t.coverUrl || defT?.coverUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop&q=80",
+        bgGradient: t.bgGradient || "linear-gradient(135deg, #1e1b4b, #312e81)",
       };
     });
   } catch (e) {
     return defaultPlaylists[0].tracks;
   }
 }
+
 
 export const useLibraryStore = create<LibraryStore>((set, get) => ({
   playlists: defaultPlaylists,
