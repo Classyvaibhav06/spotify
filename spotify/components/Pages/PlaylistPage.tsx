@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+
 import {
   MdPlayArrow,
   MdPause,
@@ -44,6 +45,81 @@ export default function PlaylistPage({ playlistId = "pl-liked" }: PlaylistPagePr
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Track[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Progressive background artwork hydrator for imported/draft playlist tracks
+  const hydratingRef = useRef(false);
+  useEffect(() => {
+    if (playlist.id === "pl-liked" || hydratingRef.current) return;
+
+    // Find tracks that need artwork resolution
+    const pendingTracks = playlist.tracks.filter(
+      (t) =>
+        t.coverUrl === playlist.coverUrl ||
+        !t.coverUrl ||
+        t.youtubeId?.startsWith("query:")
+    );
+
+    if (pendingTracks.length === 0) return;
+
+    hydratingRef.current = true;
+    let isCancelled = false;
+
+    async function hydrateBatch() {
+      // Process in gentle batches of 4 tracks
+      const batchSize = 4;
+      for (let i = 0; i < pendingTracks.length; i += batchSize) {
+        if (isCancelled) break;
+        const chunk = pendingTracks.slice(i, i + batchSize);
+
+        await Promise.all(
+          chunk.map(async (t) => {
+            try {
+              const query = t.youtubeId?.startsWith("query:")
+                ? decodeURIComponent(t.youtubeId.replace("query:", ""))
+                : `${t.title} ${t.artist}`;
+              const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+              if (res.ok) {
+                const data = await res.json();
+                const matched = data?.tracks?.[0];
+                if (matched?.coverUrl) {
+                  useLibraryStore.setState((lib) => ({
+                    playlists: lib.playlists.map((pl) =>
+                      pl.id === playlist.id
+                        ? {
+                            ...pl,
+                            tracks: pl.tracks.map((item) =>
+                              item.id === t.id
+                                ? {
+                                    ...item,
+                                    coverUrl: matched.coverUrl,
+                                    youtubeId: matched.youtubeId || item.youtubeId,
+                                  }
+                                : item
+                            ),
+                          }
+                        : pl
+                    ),
+                  }));
+                }
+              }
+            } catch (err) {}
+          })
+        );
+
+        // Small cooldown between batches to keep CPU and network butter-smooth
+        await new Promise((r) => setTimeout(r, 400));
+      }
+      hydratingRef.current = false;
+    }
+
+    hydrateBatch();
+
+    return () => {
+      isCancelled = true;
+      hydratingRef.current = false;
+    };
+  }, [playlist.id]);
+
 
   const isCurrentPlaylist =
     currentTrack && displayTracks.some((t) => t.id === currentTrack.id);

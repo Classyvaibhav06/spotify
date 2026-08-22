@@ -183,23 +183,50 @@ async function fetchSpotifyPlaylist(
   const rawTrackList = entity?.trackList || [];
   const draftTracks: ImportedTrackDraft[] = [];
 
+  // Concurrently fetch official Spotify CDN album covers for each individual track in parallel
+  const trackCovers = new Map<string, string>();
+  const trackIdsToFetch = rawTrackList
+    .map((item: any) => item?.uri?.replace("spotify:track:", "") || item?.id)
+    .filter(Boolean);
+
+  const batchSize = 15;
+  for (let i = 0; i < trackIdsToFetch.length; i += batchSize) {
+    const chunk = trackIdsToFetch.slice(i, i + batchSize);
+    await Promise.all(
+      chunk.map(async (tid: string) => {
+        try {
+          const oembedRes = await fetch(`https://open.spotify.com/oembed?url=https://open.spotify.com/track/${tid}`);
+          if (oembedRes.ok) {
+            const data = await oembedRes.json();
+            if (data?.thumbnail_url) {
+              trackCovers.set(tid, data.thumbnail_url);
+            }
+          }
+        } catch (err) {}
+      })
+    );
+  }
+
   for (const item of rawTrackList) {
     const title = item?.title || item?.name;
     const artist = item?.subtitle || item?.artists?.[0]?.name || "Spotify Artist";
     const duration = item?.duration ? Math.round(item.duration / 1000) : 180;
+    const tid = item?.uri?.replace("spotify:track:", "") || item?.id;
+    const uniqueCover = (tid && trackCovers.get(tid)) || coverUrl;
 
     if (title) {
       draftTracks.push({
         title,
         artist,
         duration,
-        coverUrl,
+        coverUrl: uniqueCover,
       });
     }
   }
 
   return { name, description, coverUrl, draftTracks };
 }
+
 
 export async function parseAndImportPlaylist(url: string) {
   // 1. Check if it's a YouTube Playlist
