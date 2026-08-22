@@ -81,7 +81,22 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       ? [state.currentTrack, ...state.history.slice(0, 19)]
       : state.history;
 
-    const updatedQueue = newQueue ? newQueue.filter(t => t.id !== targetTrack.id) : state.queue;
+    let updatedQueue: Track[] = state.queue;
+    if (newQueue && Array.isArray(newQueue) && newQueue.length > 0) {
+      const idx = newQueue.findIndex((t) => t.id === targetTrack.id);
+      if (idx !== -1) {
+        // Circular sequence: next song in playlist plays immediately next
+        const after = newQueue.slice(idx + 1);
+        const before = newQueue.slice(0, idx);
+        const ordered = [...after, ...before];
+        
+        updatedQueue = state.shuffleMode
+          ? [...ordered].sort(() => Math.random() - 0.5)
+          : ordered;
+      } else {
+        updatedQueue = newQueue.filter((t) => t.id !== targetTrack.id);
+      }
+    }
 
     set({
       currentTrack: targetTrack,
@@ -93,6 +108,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       currentTime: 0,
     });
   },
+
 
   pause: () => set({ isPlaying: false }),
 
@@ -175,7 +191,16 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     set({ volume: vol });
   },
 
-  toggleShuffle: () => set((s) => ({ shuffleMode: !s.shuffleMode, isShuffle: !s.shuffleMode })),
+  toggleShuffle: () => {
+    const { shuffleMode, queue } = get();
+    const newShuffle = !shuffleMode;
+    let newQueue = [...queue];
+    if (newShuffle && newQueue.length > 1) {
+      newQueue = newQueue.sort(() => Math.random() - 0.5);
+    }
+    set({ shuffleMode: newShuffle, isShuffle: newShuffle, queue: newQueue });
+  },
+
 
   cycleRepeat: () => {
     const modes: RepeatMode[] = ["off", "all", "one"];

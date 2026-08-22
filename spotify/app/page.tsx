@@ -107,11 +107,13 @@ export default function Home() {
     playlists,
     likedSongs,
     recentlyPlayed,
+    deletePlaylist,
     toggleLike,
     isLiked,
     addToRecent,
     setLikedSongs,
   } = useLibraryStore();
+
 
   const {
     activePage,
@@ -480,35 +482,56 @@ export default function Home() {
                 <div
                   key={pl.id}
                   onClick={() => setActivePage("playlist", pl.id)}
-                  className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer group transition-colors ${
+                  className={`flex items-center justify-between gap-2 p-2 rounded-lg cursor-pointer group transition-colors ${
                     activePlaylistId === pl.id ? "bg-[#252525]" : "hover:bg-[#1f1f1f]"
                   }`}
                   suppressHydrationWarning
                 >
-                  <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-[#181818] shadow">
-                    {posterUrl ? (
-                      <img
-                        src={posterUrl}
-                        alt={pl.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center font-bold text-xs"
-                        style={{ background: pl.gradient || "linear-gradient(135deg, #1ed760, #0d7a36)" }}
-                      >
-                        ♪
-                      </div>
-                    )}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-[#181818] shadow">
+                      {posterUrl ? (
+                        <img
+                          src={posterUrl}
+                          alt={pl.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full flex items-center justify-center font-bold text-xs"
+                          style={{ background: pl.gradient || "linear-gradient(135deg, #1ed760, #0d7a36)" }}
+                        >
+                          ♪
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0" suppressHydrationWarning>
+                      <span className="font-bold text-white truncate text-sm" suppressHydrationWarning>{pl.name}</span>
+                      <span className="text-[#b3b3b3] text-xs truncate" suppressHydrationWarning>Playlist • {pl.tracks.length} songs</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col min-w-0" suppressHydrationWarning>
-                    <span className="font-bold text-white truncate text-sm" suppressHydrationWarning>{pl.name}</span>
-                    <span className="text-[#b3b3b3] text-xs truncate" suppressHydrationWarning>Playlist • {pl.tracks.length} songs</span>
-                  </div>
+
+                  {/* Remove Playlist Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Remove playlist "${pl.name}" from your library?`)) {
+                        deletePlaylist(pl.id);
+                        addToast(`Removed "${pl.name}" from library`, "info");
+                        if (activePlaylistId === pl.id) {
+                          setActivePage("home");
+                        }
+                      }
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-[#333] text-[#b3b3b3] hover:text-red-400 transition-all flex-shrink-0"
+                    title="Remove playlist from library"
+                  >
+                    <MdClose size={16} />
+                  </button>
                 </div>
               );
             })}
           </div>
+
 
         </aside>
 
@@ -1262,27 +1285,46 @@ export default function Home() {
                     <div
                       key={pl.id}
                       onClick={() => setActivePage("playlist", pl.id)}
-                      className={`p-4 rounded-xl bg-[#181818] hover:bg-[#252525] cursor-pointer transition-colors ${
+                      className={`p-4 rounded-xl bg-[#181818] hover:bg-[#252525] cursor-pointer transition-colors group relative ${
                         libView === "list" ? "flex items-center gap-4" : ""
                       }`}
                       suppressHydrationWarning
                     >
                       <div
-                        className={`rounded-lg flex items-center justify-center font-bold text-lg shadow-md ${
+                        className={`rounded-lg flex items-center justify-center font-bold text-lg shadow-md overflow-hidden bg-[#252525] ${
                           libView === "grid" ? "w-full aspect-square mb-3" : "w-14 h-14 flex-shrink-0"
                         }`}
                         style={{ background: pl.gradient || "linear-gradient(135deg, #1ed760, #0d7a36)" }}
                       >
-                        ♪
+                        {pl.coverUrl ? (
+                          <img src={pl.coverUrl} alt={pl.name} className="w-full h-full object-cover" />
+                        ) : (
+                          "♪"
+                        )}
                       </div>
-                      <div className="min-w-0" suppressHydrationWarning>
+                      <div className="min-w-0 flex-1" suppressHydrationWarning>
                         <p className="font-bold text-sm text-white truncate" suppressHydrationWarning>{pl.name}</p>
                         <p className="text-xs text-[#b3b3b3] truncate" suppressHydrationWarning>Playlist • {pl.tracks.length} songs</p>
                       </div>
+                      {pl.id !== "pl-liked" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Remove playlist "${pl.name}"?`)) {
+                              deletePlaylist(pl.id);
+                              addToast(`Removed "${pl.name}"`, "info");
+                            }
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-[#333] text-[#b3b3b3] hover:text-red-400 transition-all absolute right-3 top-3 bg-black/50 shadow"
+                          title="Delete playlist"
+                        >
+                          <MdClose size={16} />
+                        </button>
+                      )}
                     </div>
                   ))}
-
                 </div>
+
               </div>
             )}
           </div>
