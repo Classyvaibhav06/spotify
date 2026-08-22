@@ -586,19 +586,17 @@ export default function Home() {
                     value={searchQuery}
                     onFocus={() => {
                       setShowRecentPopup(true);
-                      if (searchQuery) setActivePage("search");
                     }}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
                       setShowRecentPopup(true);
-                      if (e.target.value.trim()) setActivePage("search");
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        if (searchQuery.trim()) setActivePage("search");
+                      if (e.key === "Escape") {
                         setShowRecentPopup(false);
                       }
                     }}
+
                     className="bg-transparent text-white text-sm outline-none w-full placeholder-[#b3b3b3] truncate"
                     placeholder="What do you want to play?"
                     type="text"
@@ -652,8 +650,8 @@ export default function Home() {
                                 key={i}
                                 onClick={() => {
                                   setSearchQuery(sug);
-                                  if (activePage !== "search") setActivePage("search");
                                 }}
+
                                 className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#282828] cursor-pointer transition-colors"
                               >
                                 <MdSearch size={20} className="text-[#a7a7a7]" />
