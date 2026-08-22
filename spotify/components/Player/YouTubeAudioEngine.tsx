@@ -27,6 +27,15 @@ export default function YouTubeAudioEngine() {
   const playerRef = useRef<any>(null);
   const isApiReadyRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fallbackRetryIndexRef = useRef<number>(0);
+  const lastFailedTrackIdRef = useRef<string | null>(null);
+
+  // Reset fallback retry counter when current track changes
+  useEffect(() => {
+    fallbackRetryIndexRef.current = 0;
+    lastFailedTrackIdRef.current = null;
+  }, [currentTrack?.id]);
+
 
   // Prevent mobile browser / Android WebView from pausing YouTube audio when backgrounded or locked
   useEffect(() => {
@@ -103,38 +112,60 @@ export default function YouTubeAudioEngine() {
           }
         },
         onError: async (e: any) => {
-          console.warn("YouTube player error (video unplayable or embedding restricted):", e);
+          console.warn("YouTube player notice:", e);
           const current = usePlayerStore.getState().currentTrack;
-          // Handle Error 150 / 101: Embedding restricted by owner
-          if (current && (e.data === 150 || e.data === 101 || e.data === 100)) {
-            try {
-              const altRes = await fetch(
-                `/api/search?q=${encodeURIComponent(`${current.title} ${current.artist} lyrics audio`)}`
-              );
-              const altData = await altRes.json();
-              const altTrack = altData?.tracks?.find(
-                (t: any) => t.youtubeId && t.youtubeId !== current.youtubeId
-              );
-              if (altTrack?.youtubeId && playerRef.current?.loadVideoById) {
-                usePlayerStore.setState((s) => ({
-                  currentTrack: s.currentTrack ? { ...s.currentTrack, youtubeId: altTrack.youtubeId } : s.currentTrack,
-                }));
-                playerRef.current.loadVideoById(altTrack.youtubeId);
-                setTimeout(() => playerRef.current?.playVideo?.(), 150);
-                return;
+
+          // Handle Error 150, 101, 100, 2: Embedding blocked or video unavailable
+          if (current && (e.data === 150 || e.data === 101 || e.data === 100 || e.data === 2)) {
+            const attempt = fallbackRetryIndexRef.current;
+            if (attempt < 3) {
+              fallbackRetryIndexRef.current += 1;
+              try {
+                const searchVariants = [
+                  `${current.title} ${current.artist} audio`,
+                  `${current.title} ${current.artist} lyrics`,
+                  `${current.title} topic`,
+                ];
+                const queryVariant = searchVariants[attempt] || searchVariants[0];
+                const altRes = await fetch(`/api/search?q=${encodeURIComponent(queryVariant)}`);
+                const altData = await altRes.json();
+                const candidates = (altData?.tracks || []).filter(
+                  (t: any) => t.youtubeId && t.youtubeId !== current.youtubeId
+                );
+
+                const nextCandidate = candidates[attempt] || candidates[0];
+                if (nextCandidate?.youtubeId && playerRef.current?.loadVideoById) {
+                  usePlayerStore.setState((s) => ({
+                    currentTrack: s.currentTrack
+                      ? {
+                          ...s.currentTrack,
+                          youtubeId: nextCandidate.youtubeId,
+                          coverUrl: nextCandidate.coverUrl || s.currentTrack.coverUrl,
+                        }
+                      : s.currentTrack,
+                  }));
+                  playerRef.current.loadVideoById(nextCandidate.youtubeId);
+                  setTimeout(() => {
+                    try {
+                      playerRef.current?.playVideo?.();
+                    } catch (playErr) {}
+                  }, 150);
+                  return;
+                }
+              } catch (altErr) {
+                console.warn("Alternative track resolution error:", altErr);
               }
-            } catch (altErr) {
-              console.warn("Alternative track resolution failed:", altErr);
             }
           }
 
           const toast = useUIStore.getState().addToast;
           if (toast) {
-            toast("Track playback restricted by YouTube owner. Auto-skipping...", "warning");
+            toast("Track playback restricted by owner. Auto-advancing to next song...", "warning");
           }
           // Auto advance to next track on error
-          setTimeout(() => next(), 800);
+          setTimeout(() => next(), 500);
         },
+
       },
     });
   }
