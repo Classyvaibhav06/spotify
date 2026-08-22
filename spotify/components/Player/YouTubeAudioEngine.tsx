@@ -161,7 +161,8 @@ export default function YouTubeAudioEngine() {
         console.warn("Error loading YouTube video:", e);
       }
     }
-  }, [currentTrack?.id, currentTrack?.youtubeId]);
+  }, [currentTrack?.id]);
+
 
 
   // Sync Play / Pause state
