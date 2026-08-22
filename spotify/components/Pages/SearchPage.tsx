@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { HiSearch } from "react-icons/hi";
 import { motion } from "framer-motion";
+
 import { usePlayerStore } from "@/store/playerStore";
 import { searchYouTubeTracks } from "@/lib/youtube";
 import { Track } from "@/store/playerStore";
@@ -96,22 +96,8 @@ export default function SearchPage() {
 
   return (
     <div className="px-4 sm:px-6 py-4 text-white pb-36 md:pb-28 min-h-full">
-      {/* ── Search Input Bar (Shown only on desktop; mobile uses sticky top header) ── */}
-      <div className="relative mb-6 max-w-xl hidden md:block">
-        <HiSearch size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          placeholder="What do you want to listen to?"
-          value={query}
-          onChange={(e) => handleSearch(e.target.value)}
-          className="w-full bg-[#242424] hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] text-white text-sm rounded-full py-3 pl-12 pr-10 outline-none border border-transparent focus:border-white transition-all shadow-lg"
-        />
-        {loading && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-        )}
-      </div>
-
       {/* ── Imported Playlist Banner ── */}
+
       {importedPlaylistData && (
         <div className="mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-[#183a22] to-[#121212] border border-green-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-4 min-w-0">
