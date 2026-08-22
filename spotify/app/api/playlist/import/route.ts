@@ -251,19 +251,25 @@ export async function POST(req: NextRequest) {
         bgGradient: "linear-gradient(135deg, #10b981, #047857)",
       }));
 
-      // Try pre-resolving the first track so instant playback starts without delay
-      try {
-        const firstQuery = `${draftTracks[0].title} ${draftTracks[0].artist}`;
-        const firstRes = await searchYouTubeTracks(firstQuery);
-        if (firstRes.tracks?.[0]?.youtubeId) {
-          resolvedTracks[0].youtubeId = firstRes.tracks[0].youtubeId;
-          if (firstRes.tracks[0].coverUrl) {
-            resolvedTracks[0].coverUrl = firstRes.tracks[0].coverUrl;
+      // Pre-resolve top 8 tracks in parallel for instant zero-lag playback
+      const topCount = Math.min(8, draftTracks.length);
+      await Promise.all(
+        draftTracks.slice(0, topCount).map(async (draft, idx) => {
+          try {
+            const query = `${draft.title} ${draft.artist}`;
+            const res = await searchYouTubeTracks(query);
+            if (res.tracks?.[0]?.youtubeId) {
+              resolvedTracks[idx].youtubeId = res.tracks[0].youtubeId;
+              if (res.tracks[0].coverUrl) {
+                resolvedTracks[idx].coverUrl = res.tracks[0].coverUrl;
+              }
+            }
+          } catch (err) {
+            console.warn(`Track ${idx} pre-resolve skipped:`, err);
           }
-        }
-      } catch (err) {
-        console.warn("First track pre-resolve skipped:", err);
-      }
+        })
+      );
+
 
       return NextResponse.json({
         provider: "spotify",

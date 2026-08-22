@@ -66,10 +66,16 @@ export default function YouTubeAudioEngine() {
   function initPlayer() {
     if (playerRef.current || !window.YT) return;
 
+    const initialVideoId =
+      currentTrack?.youtubeId && !currentTrack.youtubeId.startsWith("query:")
+        ? currentTrack.youtubeId
+        : "vB1o7X-y68A";
+
     playerRef.current = new window.YT.Player("youtube-audio-bridge", {
       height: "0",
       width: "0",
-      videoId: currentTrack?.youtubeId || "vB1o7X-y68A",
+      videoId: initialVideoId,
+
       playerVars: {
         autoplay: 1,
         controls: 0,
