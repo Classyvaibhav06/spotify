@@ -271,15 +271,23 @@ export async function POST(req: NextRequest) {
       );
 
 
-      return NextResponse.json({
-        provider: "spotify",
-        name,
-        description,
-        coverUrl,
-        tracks: resolvedTracks,
-        totalTracks: draftTracks.length,
-      });
+      return NextResponse.json(
+        {
+          provider: "spotify",
+          name,
+          description,
+          coverUrl,
+          tracks: resolvedTracks,
+          totalTracks: draftTracks.length,
+        },
+        {
+          headers: {
+            "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+          },
+        }
+      );
     }
+
 
 
     return NextResponse.json(

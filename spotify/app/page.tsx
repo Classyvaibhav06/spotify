@@ -259,7 +259,7 @@ export default function Home() {
   }, []);
 
 
-  // Handle Search Input with 300ms Debounce
+  // Handle Search Input with 250ms Debounce and AbortController
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -267,13 +267,25 @@ export default function Home() {
       return;
     }
 
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setIsSearching(true);
-      const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
-      const data = await res.json();
-      setSearchResults(data.tracks || []);
-      setSearchApiError(data.error || null);
-      setIsSearching(false);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`, {
+          signal: controller.signal,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.tracks || []);
+          setSearchApiError(data.error || null);
+        }
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          console.warn("Search fetch error:", err);
+        }
+      } finally {
+        setIsSearching(false);
+      }
 
       // Add to search history
       setSearchHistory((prev) => {
@@ -281,10 +293,14 @@ export default function Home() {
         if (typeof window !== "undefined") localStorage.setItem("sp_search_history", JSON.stringify(updated));
         return updated;
       });
-    }, 300);
+    }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [searchQuery]);
+
 
   // Global Keyboard Shortcuts Listener
   useEffect(() => {

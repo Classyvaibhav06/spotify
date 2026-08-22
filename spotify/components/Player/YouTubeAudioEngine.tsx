@@ -14,6 +14,7 @@ declare global {
 export default function YouTubeAudioEngine() {
   const {
     currentTrack,
+    queue,
     isPlaying,
     volume,
     progress,
@@ -21,6 +22,7 @@ export default function YouTubeAudioEngine() {
     setDuration,
     next,
   } = usePlayerStore();
+
 
   const playerRef = useRef<any>(null);
   const isApiReadyRef = useRef(false);
@@ -205,6 +207,37 @@ export default function YouTubeAudioEngine() {
       }
     }
   }, [currentTrack?.id]);
+
+  // Performance Optimization: Background prefetch upcoming queue tracks for instant gapless transitions
+  const upcomingTrack = queue[0];
+  useEffect(() => {
+    if (!upcomingTrack || !upcomingTrack.youtubeId) return;
+    if (upcomingTrack.youtubeId.startsWith("query:")) {
+      const q = decodeURIComponent(upcomingTrack.youtubeId.replace("query:", ""));
+      fetch(`/api/search?q=${encodeURIComponent(q)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const matchId = data?.tracks?.[0]?.youtubeId;
+          const matchCover = data?.tracks?.[0]?.coverUrl;
+          if (matchId) {
+            usePlayerStore.setState((s) => {
+              if (s.queue.length > 0 && s.queue[0].id === upcomingTrack.id) {
+                const newQueue = [...s.queue];
+                newQueue[0] = {
+                  ...newQueue[0],
+                  youtubeId: matchId,
+                  coverUrl: matchCover || newQueue[0].coverUrl,
+                };
+                return { queue: newQueue };
+              }
+              return s;
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [upcomingTrack?.id, upcomingTrack?.youtubeId]);
+
 
 
 

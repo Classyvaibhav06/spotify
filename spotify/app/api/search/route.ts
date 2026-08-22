@@ -10,5 +10,10 @@ export async function GET(req: NextRequest) {
   }
 
   const result = await searchYouTubeTracks(q);
-  return NextResponse.json(result);
+  return NextResponse.json(result, {
+    headers: {
+      "Cache-Control": "public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400",
+    },
+  });
 }
+

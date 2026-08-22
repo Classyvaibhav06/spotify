@@ -124,14 +124,35 @@ const fallbackTracks: Track[] = [
   },
 ];
 
+// Global in-memory cache with 2-hour TTL for lightning-fast 0ms responses
+const SEARCH_CACHE = new Map<string, { tracks: Track[]; expiresAt: number }>();
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+const MAX_CACHE_SIZE = 500;
+
 export async function searchYouTubeTracks(query: string): Promise<{ tracks: Track[]; error?: string }> {
   if (!query || !query.trim()) return { tracks: fallbackTracks };
 
-  // 1. Try FastAPI InnerTube Backend (Unlimited, Live Data)
+  const normalizedQuery = query.toLowerCase().trim().replace(/\s+/g, " ");
+
+  // Check in-memory cache for 0ms instantaneous hit
+  const cached = SEARCH_CACHE.get(normalizedQuery);
+  if (cached && Date.now() < cached.expiresAt) {
+    return { tracks: cached.tracks };
+  }
+
+  // 1. Try FastAPI InnerTube Backend (Unlimited, Live Data) with 3.5s timeout
   try {
     const apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || "http://127.0.0.1:8000";
-    const backendUrl = `${apiBase}/api/search?q=${encodeURIComponent(query)}&limit=20`;
-    const res = await fetch(backendUrl, { cache: "no-store" });
+    const backendUrl = `${apiBase}/api/search?q=${encodeURIComponent(normalizedQuery)}&limit=20`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch(backendUrl, {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    clearTimeout(timeoutId);
+
     if (res.ok) {
       const data = await res.json();
       if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
@@ -153,13 +174,22 @@ export async function searchYouTubeTracks(query: string): Promise<{ tracks: Trac
           youtubeId: item.video_id,
           bgGradient: `linear-gradient(135deg, #1e1b4b, #312e81)`,
         }));
+
+        // Cache result
+        if (SEARCH_CACHE.size > MAX_CACHE_SIZE) {
+          const oldestKey = SEARCH_CACHE.keys().next().value;
+          if (oldestKey) SEARCH_CACHE.delete(oldestKey);
+        }
+        SEARCH_CACHE.set(normalizedQuery, { tracks, expiresAt: Date.now() + CACHE_TTL_MS });
+
         return { tracks };
       }
     }
   } catch (err) {
-    // Backend offline, proceed to fallback
-    console.warn("Local InnerTube backend not reachable, trying fallback:", err);
+    // Backend offline or timed out, proceed to direct fallback
   }
+
+
 
   // 2. Try YouTube Data API v3 if key exists
   const apiKey = process.env.YOUTUBE_API_KEY;
@@ -288,8 +318,14 @@ export async function searchYouTubeTracks(query: string): Promise<{ tracks: Trac
         }
 
         if (liveTracks.length > 0) {
+          if (SEARCH_CACHE.size > MAX_CACHE_SIZE) {
+            const oldestKey = SEARCH_CACHE.keys().next().value;
+            if (oldestKey) SEARCH_CACHE.delete(oldestKey);
+          }
+          SEARCH_CACHE.set(normalizedQuery, { tracks: liveTracks, expiresAt: Date.now() + CACHE_TTL_MS });
           return { tracks: liveTracks };
         }
+
       }
     }
   } catch (directErr) {
