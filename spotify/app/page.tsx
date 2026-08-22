@@ -259,7 +259,7 @@ export default function Home() {
   }, []);
 
 
-  // Handle Search Input with 250ms Debounce and AbortController
+  // Handle Search Input with 700ms Debounce and AbortController
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -293,13 +293,14 @@ export default function Home() {
         if (typeof window !== "undefined") localStorage.setItem("sp_search_history", JSON.stringify(updated));
         return updated;
       });
-    }, 250);
+    }, 700);
 
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
   }, [searchQuery]);
+
 
 
   // Global Keyboard Shortcuts Listener

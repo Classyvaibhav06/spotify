@@ -66,13 +66,14 @@ export default function SearchPage() {
       } finally {
         setLoading(false);
       }
-    }, 250);
+    }, 700);
 
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
   }, [query]);
+
 
   const handleSearch = (searchTerm: string) => {
     setQuery(searchTerm);
