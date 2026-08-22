@@ -33,6 +33,7 @@ interface UIState {
   lyricsOpen: boolean;
   shortcutsOpen: boolean;
   createPlaylistModalOpen: boolean;
+  importPlaylistModalOpen: boolean;
   connectDeviceOpen: boolean;
   equalizerOpen: boolean;
   editPlaylistOpen: boolean;
@@ -52,7 +53,9 @@ interface UIState {
   toggleLyrics: () => void;
   toggleShortcuts: () => void;
   setCreatePlaylistModalOpen: (open: boolean) => void;
+  setImportPlaylistModalOpen: (open: boolean) => void;
   setConnectDeviceOpen: (open: boolean) => void;
+
   setEqualizerOpen: (open: boolean) => void;
   setEditPlaylistOpen: (open: boolean) => void;
   openContextMenu: (data: Omit<ContextMenuState, "isOpen">) => void;
@@ -74,6 +77,7 @@ export const useUIStore = create<UIState>((set) => ({
   lyricsOpen: false,
   shortcutsOpen: false,
   createPlaylistModalOpen: false,
+  importPlaylistModalOpen: false,
   connectDeviceOpen: false,
   equalizerOpen: false,
   editPlaylistOpen: false,
@@ -100,7 +104,9 @@ export const useUIStore = create<UIState>((set) => ({
   toggleLyrics: () => set((s) => ({ lyricsOpen: !s.lyricsOpen })),
   toggleShortcuts: () => set((s) => ({ shortcutsOpen: !s.shortcutsOpen })),
   setCreatePlaylistModalOpen: (open) => set({ createPlaylistModalOpen: open }),
+  setImportPlaylistModalOpen: (open) => set({ importPlaylistModalOpen: open }),
   setConnectDeviceOpen: (open) => set({ connectDeviceOpen: open }),
+
   setEqualizerOpen: (open) => set({ equalizerOpen: open }),
   setEditPlaylistOpen: (open) => set({ editPlaylistOpen: open }),
   openContextMenu: (data) => set({ contextMenu: { ...data, isOpen: true } }),

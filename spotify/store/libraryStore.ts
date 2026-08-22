@@ -18,7 +18,9 @@ interface LibraryStore {
 
   // Actions
   createPlaylist: (name: string, description?: string) => string;
+  importPlaylist: (data: { name: string; description?: string; coverUrl?: string; tracks: Track[] }) => string;
   deletePlaylist: (id: string) => void;
+
   renamePlaylist: (id: string, name: string) => void;
   updatePlaylist: (id: string, updates: Partial<Playlist>) => void;
   addToPlaylist: (playlistId: string, track: Track) => void;
@@ -278,6 +280,28 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     set({ playlists: updated });
     return newId;
   },
+
+  importPlaylist: (data: { name: string; description?: string; coverUrl?: string; tracks: Track[] }) => {
+    const newId = `pl-${Date.now()}`;
+    const newPl: Playlist = {
+      id: newId,
+      name: data.name,
+      description: data.description || "Imported playlist",
+      coverUrl:
+        data.coverUrl ||
+        (data.tracks[0]?.coverUrl ??
+          "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80"),
+      gradient: "linear-gradient(135deg, #1ed760, #121212)",
+      tracks: data.tracks,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [newPl, ...get().playlists];
+    if (typeof window !== "undefined") localStorage.setItem("sp_playlists", JSON.stringify(updated));
+    set({ playlists: updated });
+    return newId;
+  },
+
 
   deletePlaylist: (id: string) => {
     const updated = get().playlists.filter((p) => p.id !== id);

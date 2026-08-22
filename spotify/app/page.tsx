@@ -33,6 +33,7 @@ import {
   MdPerson,
   MdLogout,
   MdLogin,
+  MdLink,
 } from "react-icons/md";
 import { FaSpotify } from "react-icons/fa6";
 import { usePlayerStore, Track } from "@/store/playerStore";
@@ -55,6 +56,8 @@ import QueueDrawer from "@/components/Queue/QueueDrawer";
 import LyricsModal from "@/components/Lyrics/LyricsModal";
 import ShortcutsModal from "@/components/Shortcuts/ShortcutsModal";
 import CreatePlaylistModal from "@/components/Playlist/CreatePlaylistModal";
+import ImportPlaylistModal from "@/components/Playlist/ImportPlaylistModal";
+
 import ToastNotification from "@/components/Notification/ToastNotification";
 import SearchPage from "@/components/Pages/SearchPage";
 import ArtistPage from "@/components/Pages/ArtistPage";
@@ -124,8 +127,10 @@ export default function Home() {
     shortcutsOpen,
     toggleShortcuts,
     setCreatePlaylistModalOpen,
+    setImportPlaylistModalOpen,
     setConnectDeviceOpen,
     setEqualizerOpen,
+
     setEditPlaylistOpen,
     setShowFullPlayer,
     rightPanelOpen,
@@ -376,6 +381,9 @@ export default function Home() {
       {/* Create Playlist Modal */}
       <CreatePlaylistModal />
 
+      {/* Import Playlist Modal */}
+      <ImportPlaylistModal />
+
       {/* Toast Notification Alerts */}
       <ToastNotification />
 
@@ -394,6 +402,14 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-1 text-[#b3b3b3]">
               <button
+                onClick={() => setImportPlaylistModalOpen(true)}
+                className="hover:text-white hover:bg-[#1f1f1f] p-1.5 rounded-full transition-all flex items-center gap-1 text-xs font-semibold px-2"
+                title="Import playlist from link"
+              >
+                <MdLink size={18} />
+                <span className="text-[11px]">Import</span>
+              </button>
+              <button
                 onClick={() => setCreatePlaylistModalOpen(true)}
                 className="hover:text-white hover:bg-[#1f1f1f] p-1.5 rounded-full transition-all"
                 title="Create playlist"
@@ -402,6 +418,7 @@ export default function Home() {
               </button>
             </div>
           </div>
+
 
           {/* Filter Pills */}
           <div className="px-4 pb-2 flex gap-2 flex-wrap">
@@ -1221,11 +1238,18 @@ export default function Home() {
                       {libView === "grid" ? <MdFormatListBulleted size={20} /> : <MdGridView size={20} />}
                     </button>
                     <button
+                      onClick={() => setImportPlaylistModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#282828] hover:bg-[#333] border border-[#3e3e3e] text-white font-bold text-xs hover:scale-105 transition-all"
+                    >
+                      <MdLink size={18} className="text-[#1ed760]" /> Import from Link
+                    </button>
+                    <button
                       onClick={() => setCreatePlaylistModalOpen(true)}
                       className="flex items-center gap-1 px-4 py-2 rounded-full bg-[#1ed760] text-black font-bold text-xs hover:scale-105 transition-transform"
                     >
                       <MdAdd size={18} /> New Playlist
                     </button>
+
                   </div>
                 </div>
 
