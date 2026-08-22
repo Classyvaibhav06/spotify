@@ -106,10 +106,47 @@ export default function YouTubeAudioEngine() {
 
   // Update track videoId when currentTrack changes
   useEffect(() => {
-    if (playerRef.current && currentTrack?.youtubeId) {
+    if (!currentTrack) return;
+
+    let targetVideoId = currentTrack.youtubeId;
+
+    // If track is pending search resolution
+    if (targetVideoId && targetVideoId.startsWith("query:")) {
+      const searchQuery = decodeURIComponent(targetVideoId.replace("query:", ""));
+      fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const matchId = data?.tracks?.[0]?.youtubeId || "4NRXx6U8ABQ";
+          currentTrack.youtubeId = matchId;
+          if (data?.tracks?.[0]?.coverUrl && !currentTrack.coverUrl) {
+            currentTrack.coverUrl = data.tracks[0].coverUrl;
+          }
+          if (playerRef.current && typeof playerRef.current.loadVideoById === "function") {
+            playerRef.current.loadVideoById(matchId);
+            if (isPlaying) {
+              setTimeout(() => {
+                try {
+                  playerRef.current?.playVideo?.();
+                } catch (err) {}
+              }, 150);
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn("Dynamic track resolution error:", err);
+          // Fallback to direct load
+          if (playerRef.current?.loadVideoById) {
+            playerRef.current.loadVideoById("4NRXx6U8ABQ");
+            if (isPlaying) playerRef.current.playVideo?.();
+          }
+        });
+      return;
+    }
+
+    if (playerRef.current && targetVideoId) {
       try {
         if (typeof playerRef.current.loadVideoById === "function") {
-          playerRef.current.loadVideoById(currentTrack.youtubeId);
+          playerRef.current.loadVideoById(targetVideoId);
           if (isPlaying) {
             setTimeout(() => {
               try {
@@ -124,7 +161,8 @@ export default function YouTubeAudioEngine() {
         console.warn("Error loading YouTube video:", e);
       }
     }
-  }, [currentTrack?.youtubeId]);
+  }, [currentTrack?.id, currentTrack?.youtubeId]);
+
 
   // Sync Play / Pause state
   useEffect(() => {

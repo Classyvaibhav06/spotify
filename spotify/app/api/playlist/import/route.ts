@@ -232,52 +232,37 @@ export async function POST(req: NextRequest) {
         spotifyEntity.id
       );
 
-      // Resolve top tracks to playable YouTube tracks
-      // Limit resolution to top 30 tracks for speed
-      const targetDrafts = draftTracks.slice(0, 30);
-      const resolvedTracks: Track[] = [];
-
-      // Batch resolution in chunks of 5
-      const chunkSize = 5;
-      for (let i = 0; i < targetDrafts.length; i += chunkSize) {
-        const chunk = targetDrafts.slice(i, i + chunkSize);
-        const results = await Promise.all(
-          chunk.map(async (draft, idx) => {
-            const query = `${draft.title} ${draft.artist}`;
-            try {
-              const res = await searchYouTubeTracks(query);
-              const bestMatch = res.tracks[0];
-              if (bestMatch && bestMatch.youtubeId) {
-                return {
-                  id: `yt-imp-${i + idx}-${bestMatch.youtubeId}`,
-                  title: draft.title,
-                  artist: draft.artist,
-                  album: name,
-                  duration: bestMatch.duration || draft.duration || 180,
-                  youtubeId: bestMatch.youtubeId,
-                  coverUrl: bestMatch.coverUrl || draft.coverUrl || coverUrl,
-                  bgGradient: "linear-gradient(135deg, #10b981, #047857)",
-                };
-              }
-            } catch (err) {
-              console.warn(`Failed to resolve track ${query}:`, err);
-            }
-
-            // Fallback mock playable track
-            return {
-              id: `yt-imp-${i + idx}`,
-              title: draft.title,
-              artist: draft.artist,
-              album: name,
-              duration: draft.duration || 180,
-              youtubeId: "4NRXx6U8ABQ", // Fallback stream
-              coverUrl: draft.coverUrl || coverUrl,
-              bgGradient: "linear-gradient(135deg, #10b981, #047857)",
-            };
-          })
+      if (draftTracks.length === 0) {
+        return NextResponse.json(
+          { error: "Could not find any playable tracks in this Spotify playlist." },
+          { status: 404 }
         );
+      }
 
-        resolvedTracks.push(...results);
+      // Convert all tracks from the Spotify playlist
+      const resolvedTracks: Track[] = draftTracks.map((draft, idx) => ({
+        id: `yt-imp-${idx}-${Date.now()}`,
+        title: draft.title,
+        artist: draft.artist,
+        album: name,
+        duration: draft.duration || 180,
+        youtubeId: `query:${encodeURIComponent(`${draft.title} ${draft.artist}`)}`,
+        coverUrl: draft.coverUrl || coverUrl,
+        bgGradient: "linear-gradient(135deg, #10b981, #047857)",
+      }));
+
+      // Try pre-resolving the first track so instant playback starts without delay
+      try {
+        const firstQuery = `${draftTracks[0].title} ${draftTracks[0].artist}`;
+        const firstRes = await searchYouTubeTracks(firstQuery);
+        if (firstRes.tracks?.[0]?.youtubeId) {
+          resolvedTracks[0].youtubeId = firstRes.tracks[0].youtubeId;
+          if (firstRes.tracks[0].coverUrl) {
+            resolvedTracks[0].coverUrl = firstRes.tracks[0].coverUrl;
+          }
+        }
+      } catch (err) {
+        console.warn("First track pre-resolve skipped:", err);
       }
 
       return NextResponse.json({
@@ -289,6 +274,7 @@ export async function POST(req: NextRequest) {
         totalTracks: draftTracks.length,
       });
     }
+
 
     return NextResponse.json(
       { error: "Unsupported link. Please paste a valid Spotify or YouTube Playlist link." },
