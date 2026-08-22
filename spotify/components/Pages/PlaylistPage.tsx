@@ -159,10 +159,10 @@ export default function PlaylistPage({ playlistId = "pl-liked" }: PlaylistPagePr
     <div className="min-h-full pb-28 text-white">
       {/* ── Hero Header ── */}
       <div
-        className="p-8 flex flex-col sm:flex-row items-end gap-6"
+        className="p-4 sm:p-8 flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6 text-center sm:text-left"
         style={{ background: playlist.gradient || "linear-gradient(135deg, #450af5, #121212)" }}
       >
-        <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-xl shadow-2xl flex-shrink-0 flex items-center justify-center overflow-hidden bg-[#181818]">
+        <div className="w-40 h-40 sm:w-56 sm:h-56 rounded-xl shadow-2xl flex-shrink-0 flex items-center justify-center overflow-hidden bg-[#181818]">
           {playlist.coverUrl ? (
             <img src={playlist.coverUrl} alt={playlist.name} className="w-full h-full object-cover" />
           ) : displayTracks.length > 0 ? (
@@ -187,20 +187,20 @@ export default function PlaylistPage({ playlistId = "pl-liked" }: PlaylistPagePr
               onChange={(e) => setTitleInput(e.target.value)}
               onBlur={handleTitleSubmit}
               onKeyDown={(e) => e.key === "Enter" && handleTitleSubmit()}
-              className="text-4xl sm:text-6xl font-black bg-black/40 border-b border-white outline-none w-full my-2 text-white"
+              className="text-3xl sm:text-6xl font-black bg-black/40 border-b border-white outline-none w-full my-2 text-white text-center sm:text-left"
               autoFocus
             />
           ) : (
             <h1
               onDoubleClick={() => playlist.id !== "pl-liked" && setIsEditingTitle(true)}
-              className="text-4xl sm:text-6xl font-black tracking-tight my-2 truncate cursor-pointer hover:opacity-90 drop-shadow-lg"
+              className="text-3xl sm:text-6xl font-black tracking-tight my-2 truncate cursor-pointer hover:opacity-90 drop-shadow-lg"
               title={playlist.id !== "pl-liked" ? "Double-click to rename" : ""}
             >
               {playlist.name}
             </h1>
           )}
           <p className="text-sm text-gray-300 mb-2">{playlist.description || "Your favorite collection"}</p>
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-300">
+          <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold text-gray-300">
             <span className="text-white">Vaibhav Ghoshi</span>
             <span>•</span>
             <span>{displayTracks.length} songs</span>
@@ -209,7 +209,8 @@ export default function PlaylistPage({ playlistId = "pl-liked" }: PlaylistPagePr
       </div>
 
       {/* ── Action Controls ── */}
-      <div className="px-8 py-6 flex items-center gap-6">
+      <div className="px-4 sm:px-8 py-4 sm:py-6 flex items-center gap-4 sm:gap-6">
+
         <button
           onClick={() => {
             if (displayTracks.length > 0) {
@@ -255,11 +256,11 @@ export default function PlaylistPage({ playlistId = "pl-liked" }: PlaylistPagePr
       </div>
 
       {/* ── Tracklist Table ── */}
-      <div className="px-8 mb-12">
+      <div className="px-3 sm:px-8 mb-12">
         {displayTracks.length > 0 ? (
           <div>
-            <div className="grid grid-cols-[32px_1fr_120px_60px] gap-4 px-4 py-2 border-b border-gray-800 text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
-              <span>#</span>
+            <div className="grid grid-cols-[28px_1fr_40px] sm:grid-cols-[32px_1fr_140px_60px] gap-2 sm:gap-4 px-2 sm:px-4 py-2 border-b border-gray-800 text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+              <span className="text-center">#</span>
               <span>Title</span>
               <span className="hidden sm:block">Album</span>
               <span className="text-right">Action</span>
@@ -286,45 +287,66 @@ export default function PlaylistPage({ playlistId = "pl-liked" }: PlaylistPagePr
                         coverUrl: track.coverUrl,
                       });
                     }}
-                    className={`grid grid-cols-[32px_1fr_120px_60px] gap-4 items-center px-4 py-3 rounded-lg cursor-pointer group transition-all ${
-                      isPlayingThis ? "bg-[#282828]" : "hover:bg-[#282828]/70"
+                    className={`grid grid-cols-[28px_1fr_40px] sm:grid-cols-[32px_1fr_140px_60px] gap-2 sm:gap-4 items-center px-2 sm:px-4 py-2 sm:py-3 rounded-xl cursor-pointer group transition-all ${
+                      isPlayingThis ? "bg-[#282828]" : "hover:bg-[#282828]/70 active:bg-[#333]"
                     }`}
                   >
-                    <span className={`text-sm font-bold text-gray-400 group-hover:hidden ${isPlayingThis ? "text-green-500" : ""}`}>
-                      {idx + 1}
-                    </span>
-                    <button className="hidden group-hover:flex items-center justify-center text-white">
-                      <MdPlayArrow size={18} />
-                    </button>
+                    {/* Column 1: Index Number or Play / Playing indicator */}
+                    <div className="flex items-center justify-center text-sm font-bold text-gray-400">
+                      <span className={`group-hover:hidden ${isPlayingThis ? "text-[#1ed760]" : ""}`}>
+                        {idx + 1}
+                      </span>
+                      <MdPlayArrow size={18} className="hidden group-hover:block text-white" />
+                    </div>
 
+                    {/* Column 2: Artwork + Track Title + Artist */}
                     <div className="flex items-center gap-3 min-w-0">
-                      {track.coverUrl && (
-                        <img src={track.coverUrl} alt={track.title} className="w-10 h-10 rounded object-cover flex-shrink-0 shadow" />
+                      {track.coverUrl ? (
+                        <img
+                          src={track.coverUrl}
+                          alt={track.title}
+                          className="w-11 h-11 rounded-md object-cover flex-shrink-0 shadow-md"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-md bg-[#1ed760] text-black flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-md">
+                          ♪
+                        </div>
                       )}
-                      <div className="min-w-0">
-                        <p className={`font-semibold text-sm truncate ${isPlayingThis ? "text-green-500" : "text-white"}`}>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`font-semibold text-sm truncate leading-tight ${
+                            isPlayingThis ? "text-[#1ed760]" : "text-white"
+                          }`}
+                        >
                           {track.title}
                         </p>
-                        <p className="text-xs text-gray-400 truncate">{track.artist}</p>
+                        <p className="text-xs text-gray-400 truncate mt-0.5">{track.artist}</p>
                       </div>
                     </div>
 
+                    {/* Column 3: Album (Desktop only) */}
                     <div className="text-xs text-gray-400 truncate hidden sm:block">
                       {track.album || "Single"}
                     </div>
 
-                    <div className="flex justify-end">
-                      {playlist.id !== "pl-liked" && (
+                    {/* Column 4: Actions */}
+                    <div className="flex justify-end items-center gap-1">
+                      {playlist.id !== "pl-liked" ? (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             removeFromPlaylist(playlist.id, track.id);
                             addToast("Removed from playlist", "info");
                           }}
-                          className="p-1 text-gray-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="p-1.5 text-gray-400 hover:text-red-400 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove from playlist"
                         >
                           <MdDelete size={18} />
                         </button>
+                      ) : (
+                        <span className="text-xs text-gray-500 font-mono hidden sm:inline">
+                          {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}` : ""}
+                        </span>
                       )}
                     </div>
                   </motion.div>
@@ -332,6 +354,7 @@ export default function PlaylistPage({ playlistId = "pl-liked" }: PlaylistPagePr
               })}
             </div>
           </div>
+
         ) : (
           <div className="p-12 text-center border border-dashed border-gray-800 rounded-2xl text-gray-400">
             <p className="text-lg font-bold text-white mb-1">No songs in this playlist yet</p>
@@ -341,8 +364,9 @@ export default function PlaylistPage({ playlistId = "pl-liked" }: PlaylistPagePr
       </div>
 
       {/* ── Find & Add Tracks Search Bar ── */}
-      <div className="mx-8 bg-[#181818] p-6 rounded-2xl border border-gray-800">
+      <div className="mx-3 sm:mx-8 bg-[#181818] p-4 sm:p-6 rounded-2xl border border-gray-800">
         <h3 className="text-lg font-bold text-white mb-4">Find songs to add</h3>
+
         <form onSubmit={handleSearch} className="relative max-w-md mb-6">
           <MdSearch size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
