@@ -75,7 +75,7 @@ export default function YouTubeAudioEngine() {
       height: "0",
       width: "0",
       videoId: initialVideoId,
-
+      host: "https://www.youtube-nocookie.com",
       playerVars: {
         autoplay: 1,
         controls: 0,
@@ -83,6 +83,9 @@ export default function YouTubeAudioEngine() {
         fs: 0,
         rel: 0,
         modestbranding: 1,
+        enablejsapi: 1,
+        origin: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
+        playsinline: 1,
       },
       events: {
         onReady: (event: any) => {
@@ -97,8 +100,32 @@ export default function YouTubeAudioEngine() {
             next();
           }
         },
-        onError: (e: any) => {
+        onError: async (e: any) => {
           console.warn("YouTube player error (video unplayable or embedding restricted):", e);
+          const current = usePlayerStore.getState().currentTrack;
+          // Handle Error 150 / 101: Embedding restricted by owner
+          if (current && (e.data === 150 || e.data === 101 || e.data === 100)) {
+            try {
+              const altRes = await fetch(
+                `/api/search?q=${encodeURIComponent(`${current.title} ${current.artist} lyrics audio`)}`
+              );
+              const altData = await altRes.json();
+              const altTrack = altData?.tracks?.find(
+                (t: any) => t.youtubeId && t.youtubeId !== current.youtubeId
+              );
+              if (altTrack?.youtubeId && playerRef.current?.loadVideoById) {
+                usePlayerStore.setState((s) => ({
+                  currentTrack: s.currentTrack ? { ...s.currentTrack, youtubeId: altTrack.youtubeId } : s.currentTrack,
+                }));
+                playerRef.current.loadVideoById(altTrack.youtubeId);
+                setTimeout(() => playerRef.current?.playVideo?.(), 150);
+                return;
+              }
+            } catch (altErr) {
+              console.warn("Alternative track resolution failed:", altErr);
+            }
+          }
+
           const toast = useUIStore.getState().addToast;
           if (toast) {
             toast("Track playback restricted by YouTube owner. Auto-skipping...", "warning");
@@ -109,6 +136,7 @@ export default function YouTubeAudioEngine() {
       },
     });
   }
+
 
   // Update track videoId when currentTrack changes
   useEffect(() => {
