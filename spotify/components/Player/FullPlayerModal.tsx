@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { usePlayerStore } from "@/store/playerStore";
+import { useLibraryStore } from "@/store/libraryStore";
 import { useUIStore } from "@/store/useUIStore";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,140 +13,303 @@ import {
   MdSkipNext,
   MdShuffle,
   MdRepeat,
-  MdVolumeUp,
-  MdFavorite,
+  MdRepeatOne,
+  MdMoreVert,
+  MdClose,
+  MdAddCircleOutline,
+  MdCheckCircle,
+  MdDevices,
+  MdShare,
+  MdQueueMusic,
+  MdTimer,
 } from "react-icons/md";
+import { SiSpotify } from "react-icons/si";
+
+function formatTime(seconds: number) {
+  if (isNaN(seconds) || seconds < 0) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
 
 export default function FullPlayerModal() {
-  const { showFullPlayer, setShowFullPlayer } = useUIStore();
+  const { showFullPlayer, setShowFullPlayer, toggleLyrics, addToast, openContextMenu } = useUIStore();
   const {
     currentTrack,
     isPlaying,
+    currentTime,
     progress,
     duration,
     togglePlay,
     next,
     previous,
     seek,
+    shuffleMode,
+    toggleShuffle,
+    repeatMode,
+    cycleRepeat,
   } = usePlayerStore();
+
+  const { isLiked, toggleLike } = useLibraryStore();
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragTime, setDragTime] = useState(0);
 
   if (!showFullPlayer || !currentTrack) return null;
 
-  const bgGradient = currentTrack.bgGradient || "linear-gradient(135deg, #1e1b4b, #0f172a)";
+  const liked = isLiked(currentTrack.id);
+  const activeTime = isDragging ? dragTime : currentTime || progress || 0;
+  const progressPercent = duration > 0 ? (activeTime / duration) * 100 : 0;
+
+  // Rich dynamic ambient background colors
+  const bgGradient =
+    currentTrack.bgGradient ||
+    "linear-gradient(180deg, #58151c 0%, #290a0f 45%, #121212 100%)";
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: "100%" }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-0 z-[100] flex flex-col justify-between p-8 text-white overflow-hidden"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 220 }}
+        className="fixed inset-0 z-[100] flex flex-col justify-between p-5 sm:p-7 text-white select-none overflow-y-auto hide-scrollbar"
         style={{ background: bgGradient }}
       >
-        {/* Animated Background Glow */}
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" />
+        {/* Ambient Dark Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/80 pointer-events-none" />
 
-        {/* ── Top Header ── */}
-        <div className="relative z-10 flex items-center justify-between">
+        {/* ── Top Header Navigation ── */}
+        <div className="relative z-10 flex items-center justify-between pt-1">
           <button
             onClick={() => setShowFullPlayer(false)}
-            className="p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
+            className="p-2 -ml-2 rounded-full text-white/80 hover:text-white active:scale-90 transition-transform cursor-pointer"
+            title="Minimize"
           >
-            <MdKeyboardArrowDown size={32} />
+            <MdKeyboardArrowDown size={30} />
           </button>
-          <div className="text-center">
-            <span className="text-xs font-bold uppercase tracking-widest text-gray-300">Playing from Album</span>
-            <p className="font-bold text-sm truncate max-w-xs">{currentTrack.album || "Spotify Music"}</p>
+
+          <div className="text-center px-4 min-w-0 flex-1">
+            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.2em] text-white/70 block truncate">
+              Recommended for you
+            </span>
+            <p className="font-bold text-xs sm:text-sm text-white truncate max-w-[240px] mx-auto mt-0.5">
+              {currentTrack.album || "Spotify Music"}
+            </p>
           </div>
-          <div className="w-10" />
+
+          <button
+            onClick={(e) => {
+              openContextMenu({
+                x: e.clientX || window.innerWidth - 80,
+                y: e.clientY || 60,
+                trackId: currentTrack.id,
+                title: currentTrack.title,
+                artist: currentTrack.artist,
+              });
+            }}
+            className="p-2 -mr-2 rounded-full text-white/80 hover:text-white active:scale-90 transition-transform cursor-pointer"
+            title="More Options"
+          >
+            <MdMoreVert size={24} />
+          </button>
         </div>
 
-        {/* ── Center Content: Spinning Vinyl Disc & Enlarged Lyrics ── */}
-        <div className="relative z-10 my-auto flex flex-col lg:flex-row items-center justify-center gap-12 max-w-5xl mx-auto w-full">
-          {/* Vinyl Disc Container */}
-          <div className="relative flex items-center justify-center">
-            {/* Vinyl Record */}
-            <motion.div
-              animate={{ rotate: isPlaying ? 360 : 0 }}
-              transition={{ repeat: Infinity, duration: 12, ease: "linear" }}
-              className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-black border-4 border-gray-900 shadow-2xl flex items-center justify-center relative overflow-hidden"
-            >
-              {/* Vinyl Groove Rings */}
-              <div className="absolute inset-2 rounded-full border border-gray-800/80" />
-              <div className="absolute inset-8 rounded-full border border-gray-800/60" />
-              <div className="absolute inset-16 rounded-full border border-gray-800/40" />
-
-              {/* Center Album Art Label */}
-              <img
-                src={currentTrack.coverUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop&q=80"}
-                alt={currentTrack.title}
-                className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover shadow-inner"
-              />
-              <div className="absolute w-6 h-6 rounded-full bg-black border-2 border-gray-700 z-10" />
-            </motion.div>
-          </div>
-
-          {/* Enlarged Synchronized Lyrics Preview */}
-          <div className="flex-1 max-w-md text-center lg:text-left space-y-4">
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight drop-shadow-md">
-              {currentTrack.title}
-            </h2>
-            <p className="text-xl text-gray-300 font-medium">{currentTrack.artist}</p>
-
-            <div className="pt-6 space-y-3 font-semibold text-lg sm:text-xl text-gray-400">
-              <p className="hover:text-white transition-colors">I've become so numb, I can't feel you there</p>
-              <p className="text-green-400 font-bold text-xl sm:text-2xl scale-105 transition-all drop-shadow">
-                Become so tired, so much more aware
-              </p>
-              <p className="hover:text-white transition-colors">By becoming this all I want to do</p>
-              <p className="hover:text-white transition-colors">Is be more like me and be less like you</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Bottom Controls & Timeline Bar ── */}
-        <div className="relative z-10 max-w-3xl mx-auto w-full space-y-4">
-          {/* Progress Timeline Slider */}
-          <div className="space-y-1">
-            <input
-              type="range"
-              min={0}
-              max={duration || 100}
-              value={progress}
-              onChange={(e) => seek(Number(e.target.value))}
-              className="w-full h-1.5 bg-gray-600/50 rounded-lg appearance-none cursor-pointer accent-green-500 hover:h-2 transition-all"
+        {/* ── Center Large Album Artwork ── */}
+        <div className="relative z-10 my-auto py-4 flex items-center justify-center">
+          <div className="relative w-[78vw] max-w-[340px] aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-black/90 border border-white/10 group">
+            <img
+              src={
+                currentTrack.coverUrl ||
+                "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80"
+              }
+              alt={currentTrack.title}
+              className="w-full h-full object-cover select-none"
             />
-            <div className="flex justify-between text-xs text-gray-300 font-medium">
-              <span>{Math.floor(progress / 60)}:{(progress % 60).toString().padStart(2, "0")}</span>
-              <span>{Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, "0")}</span>
+          </div>
+        </div>
+
+        {/* ── Bottom Interactive Controls Section ── */}
+        <div className="relative z-10 w-full max-w-md mx-auto space-y-4 pb-2">
+          {/* Track Title & Quick Actions */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl sm:text-2xl font-black text-white truncate leading-tight tracking-tight">
+                {currentTrack.title}
+              </h2>
+              <div className="flex items-center gap-1.5 mt-1">
+                <SiSpotify size={13} className="text-[#1ed760] flex-shrink-0" />
+                <p className="text-sm font-semibold text-[#b3b3b3] truncate">
+                  {currentTrack.artist}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => addToast("Song hidden from recommendations", "info")}
+                className="p-2 text-white/70 hover:text-white active:scale-90 transition-transform"
+                title="Hide song"
+              >
+                <MdClose size={24} />
+              </button>
+
+              <button
+                onClick={() => {
+                  toggleLike(currentTrack);
+                  addToast(
+                    liked ? "Removed from Liked Songs" : "Added to Liked Songs",
+                    liked ? "info" : "success"
+                  );
+                }}
+                className={`p-2 transition-transform active:scale-125 ${
+                  liked ? "text-[#1ed760]" : "text-white/80 hover:text-white"
+                }`}
+                title={liked ? "Remove from Liked Songs" : "Save to Liked Songs"}
+              >
+                {liked ? <MdCheckCircle size={26} /> : <MdAddCircleOutline size={26} />}
+              </button>
             </div>
           </div>
 
-          {/* Playback Action Buttons */}
-          <div className="flex items-center justify-between">
-            <button className="text-gray-400 hover:text-green-400 transition-colors">
-              <MdShuffle size={24} />
-            </button>
-
-            <div className="flex items-center gap-6">
-              <button onClick={previous} className="text-gray-300 hover:text-white transition-colors">
-                <MdSkipPrevious size={36} />
-              </button>
-              <button
-                onClick={togglePlay}
-                className="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-all shadow-xl"
-              >
-                {isPlaying ? <MdPause size={36} /> : <MdPlayArrow size={40} className="ml-1" />}
-              </button>
-              <button onClick={next} className="text-gray-300 hover:text-white transition-colors">
-                <MdSkipNext size={36} />
-              </button>
+          {/* Interactive Seekbar / Progress Timeline */}
+          <div className="space-y-1 pt-1">
+            <div className="relative flex items-center group py-1">
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={activeTime}
+                onMouseDown={() => setIsDragging(true)}
+                onTouchStart={() => setIsDragging(true)}
+                onChange={(e) => setDragTime(Number(e.target.value))}
+                onMouseUp={(e) => {
+                  setIsDragging(false);
+                  seek(Number((e.target as HTMLInputElement).value));
+                }}
+                onTouchEnd={() => {
+                  setIsDragging(false);
+                  seek(dragTime);
+                }}
+                className="w-full h-1 bg-white/20 hover:bg-white/30 rounded-lg appearance-none cursor-pointer accent-white transition-all"
+              />
             </div>
 
-            <button className="text-gray-400 hover:text-green-400 transition-colors">
-              <MdRepeat size={24} />
+            <div className="flex justify-between text-[11px] font-semibold text-[#b3b3b3]">
+              <span>{formatTime(activeTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* Main Playback Buttons Row */}
+          <div className="flex items-center justify-between pt-1">
+            {/* Shuffle */}
+            <button
+              onClick={toggleShuffle}
+              className={`p-2 relative transition-all active:scale-90 ${
+                shuffleMode ? "text-[#1ed760]" : "text-white/70 hover:text-white"
+              }`}
+              title="Shuffle mode"
+            >
+              <MdShuffle size={24} />
+              {shuffleMode && (
+                <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#1ed760] rounded-full" />
+              )}
             </button>
+
+            {/* Previous */}
+            <button
+              onClick={previous}
+              className="p-2 text-white/90 hover:text-white active:scale-90 transition-transform"
+              title="Previous song"
+            >
+              <MdSkipPrevious size={36} />
+            </button>
+
+            {/* Big Center Play / Pause */}
+            <button
+              onClick={togglePlay}
+              className="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center shadow-2xl active:scale-95 hover:scale-105 transition-all"
+              title={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? (
+                <MdPause size={34} />
+              ) : (
+                <MdPlayArrow size={36} className="ml-1" />
+              )}
+            </button>
+
+            {/* Next */}
+            <button
+              onClick={next}
+              className="p-2 text-white/90 hover:text-white active:scale-90 transition-transform"
+              title="Next song"
+            >
+              <MdSkipNext size={36} />
+            </button>
+
+            {/* Repeat / Sleep Timer */}
+            <button
+              onClick={cycleRepeat}
+              className={`p-2 relative transition-all active:scale-90 ${
+                repeatMode !== "off" ? "text-[#1ed760]" : "text-white/70 hover:text-white"
+              }`}
+              title={`Repeat: ${repeatMode}`}
+            >
+              {repeatMode === "one" ? <MdRepeatOne size={24} /> : <MdRepeat size={24} />}
+              {repeatMode !== "off" && (
+                <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#1ed760] rounded-full" />
+              )}
+            </button>
+          </div>
+
+          {/* Bottom Secondary Actions (Devices, Share, Queue) */}
+          <div className="flex items-center justify-between pt-2 px-1 text-white/70">
+            <button
+              onClick={() => addToast("Playing on This Phone / Web Browser", "info")}
+              className="p-1.5 hover:text-white transition-colors"
+              title="Devices"
+            >
+              <MdDevices size={20} />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    navigator.clipboard?.writeText(window.location.href);
+                    addToast("Track link copied to clipboard!", "success");
+                  }
+                }}
+                className="p-1.5 hover:text-white transition-colors"
+                title="Share track"
+              >
+                <MdShare size={20} />
+              </button>
+
+              <button
+                onClick={toggleLyrics}
+                className="p-1.5 hover:text-white transition-colors"
+                title="View Lyrics / Queue"
+              >
+                <MdQueueMusic size={22} />
+              </button>
+            </div>
+          </div>
+
+          {/* ── Bottom Lyrics Preview Drawer ── */}
+          <div
+            onClick={toggleLyrics}
+            className="mt-2 p-3.5 sm:p-4 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/10 backdrop-blur-md cursor-pointer transition-all active:scale-[0.99] group shadow-xl"
+          >
+            <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-white/80 mb-1">
+              <span>Lyrics preview</span>
+              <span className="text-[11px] font-bold text-[#1ed760] group-hover:underline">
+                Open Full Lyrics
+              </span>
+            </div>
+            <p className="text-sm font-bold text-white/90 line-clamp-2 leading-relaxed">
+              &quot;{currentTrack.title}&quot; by {currentTrack.artist}
+            </p>
           </div>
         </div>
       </motion.div>

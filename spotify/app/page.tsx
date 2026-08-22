@@ -1373,24 +1373,30 @@ export default function Home() {
             <img
               src={currentTrack.coverUrl}
               alt={currentTrack.title}
-              className="w-14 h-14 rounded-md object-cover flex-shrink-0 shadow-md"
+              onClick={() => setShowFullPlayer(true)}
+              className="w-14 h-14 rounded-md object-cover flex-shrink-0 shadow-md cursor-pointer hover:opacity-90 transition-opacity"
             />
           ) : (
             <div
-              className="w-14 h-14 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-base shadow-md"
+              onClick={() => setShowFullPlayer(true)}
+              className="w-14 h-14 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-base shadow-md cursor-pointer"
               style={{ background: currentTrack?.bgGradient || "linear-gradient(135deg, #d4a373, #faedcd)" }}
             >
               ♪
             </div>
           )}
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-bold truncate text-white cursor-pointer hover:underline">
+          <div
+            onClick={() => setShowFullPlayer(true)}
+            className="flex flex-col min-w-0 cursor-pointer group"
+          >
+            <span className="text-sm font-bold truncate text-white group-hover:underline">
               {currentTrack?.title ?? "Teri Naar"}
             </span>
-            <span className="text-xs text-[#b3b3b3] truncate cursor-pointer hover:underline">
+            <span className="text-xs text-[#b3b3b3] truncate group-hover:underline">
               {currentTrack?.artist ?? "Nikk"}
             </span>
           </div>
+
           {currentTrack && (
             <button
               onClick={() => {
