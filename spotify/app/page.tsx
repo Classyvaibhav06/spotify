@@ -247,13 +247,15 @@ export default function Home() {
     },
   ]);
 
-  // Load search history from localStorage
+  // Load search history and sync stored playlists on client mount
   useEffect(() => {
+    useLibraryStore.getState().initClientStorage();
     if (typeof window !== "undefined") {
       const history = localStorage.getItem("sp_search_history");
       if (history) setSearchHistory(JSON.parse(history));
     }
   }, []);
+
 
   // Handle Search Input with 300ms Debounce
   useEffect(() => {

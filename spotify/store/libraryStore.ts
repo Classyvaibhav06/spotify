@@ -30,10 +30,12 @@ interface LibraryStore {
   isLiked: (trackId: string) => boolean;
   addToRecent: (track: Track) => void;
   reorderPlaylistTracks: (playlistId: string, newTracks: Track[]) => void;
+  initClientStorage: () => void;
 }
 
 // Initial real playlists with real high-definition album art cover posters
 const defaultPlaylists: Playlist[] = [
+
   {
     id: "pl-liked",
     name: "Liked Songs",
@@ -259,9 +261,10 @@ function loadInitialLiked(): Track[] {
 }
 
 export const useLibraryStore = create<LibraryStore>((set, get) => ({
-  playlists: loadInitialPlaylists(),
-  likedSongs: loadInitialLiked(),
+  playlists: defaultPlaylists,
+  likedSongs: defaultPlaylists[0].tracks,
   recentlyPlayed: [],
+
 
   createPlaylist: (name: string, description = "") => {
     const newId = `pl-${Date.now()}`;
@@ -407,4 +410,26 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     if (typeof window !== "undefined") localStorage.setItem("sp_playlists", JSON.stringify(updated));
     set({ playlists: updated });
   },
+
+  initClientStorage: () => {
+    if (typeof window === "undefined") return;
+    try {
+      const storedPl = localStorage.getItem("sp_playlists");
+      const storedLiked = localStorage.getItem("sp_liked");
+      const storedRecent = localStorage.getItem("sp_recent");
+
+      const parsedPlaylists = storedPl ? loadInitialPlaylists() : defaultPlaylists;
+      const parsedLiked = storedLiked ? loadInitialLiked() : defaultPlaylists[0].tracks;
+      const parsedRecent = storedRecent ? JSON.parse(storedRecent) : [];
+
+      set({
+        playlists: parsedPlaylists,
+        likedSongs: parsedLiked,
+        recentlyPlayed: parsedRecent,
+      });
+    } catch (e) {
+      console.warn("Storage init skipped:", e);
+    }
+  },
 }));
+
