@@ -35,37 +35,50 @@ export default function SearchPage() {
   const { toggleLike, isLiked } = useLibraryStore();
 
   useEffect(() => {
-    if (searchQuery) {
-      setQuery(searchQuery);
-      handleSearch(searchQuery);
+    if (searchQuery !== query) {
+      setQuery(searchQuery || "");
     }
   }, [searchQuery]);
 
-  const handleSearch = async (searchTerm: string) => {
-    setQuery(searchTerm);
-    setSearchQuery(searchTerm);
-    if (!searchTerm.trim()) {
+  // Debounced search with AbortController
+  useEffect(() => {
+    if (!query.trim()) {
       setResults([]);
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
-      const data = await res.json();
-      if (data.tracks && data.tracks.length > 0) {
-        setResults(data.tracks);
-      } else {
-        const fallback = await searchYouTubeTracks(searchTerm);
-        setResults(fallback.tracks || []);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setResults(data.tracks || []);
+        }
+      } catch (e: any) {
+        if (e.name !== "AbortError") {
+          console.warn("Search fetch error in SearchPage:", e);
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      const fallback = await searchYouTubeTracks(searchTerm);
-      setResults(fallback.tracks || []);
-    } finally {
-      setLoading(false);
-    }
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query]);
+
+  const handleSearch = (searchTerm: string) => {
+    setQuery(searchTerm);
+    setSearchQuery(searchTerm);
   };
+
 
   return (
     <div className="px-4 sm:px-6 py-4 text-white pb-36 md:pb-28 min-h-full">
