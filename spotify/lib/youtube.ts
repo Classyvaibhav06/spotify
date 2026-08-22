@@ -194,72 +194,60 @@ export async function searchYouTubeTracks(query: string): Promise<{ tracks: Trac
   // 2. Try YouTube Data API v3 if key exists
   const apiKey = process.env.YOUTUBE_API_KEY;
 
-  if (!apiKey || apiKey.trim() === "") {
-    const qTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
-    const filtered = fallbackTracks.filter((t) => {
-      const text = `${t.title} ${t.artist} ${t.album || ""}`.toLowerCase();
-      return qTerms.some((term) => text.includes(term));
-    });
+  if (apiKey && apiKey.trim() !== "") {
+    try {
+      const searchQuery = query.toLowerCase().includes("audio") ? query : `${query} audio`;
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(
+        searchQuery
+      )}&key=${apiKey.trim()}`;
 
-    return {
-      tracks: filtered.length > 0 ? filtered : fallbackTracks,
-    };
+      const res = await fetch(url);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+          const tracks = data.items
+            .filter((item: any) => item.id && item.id.videoId)
+            .map((item: any) => ({
+              id: `yt-${item.id.videoId}`,
+              title: item.snippet.title
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&amp;/g, "&")
+                .replace(/\(Official Audio\)/gi, "")
+                .replace(/\(Audio\)/gi, "")
+                .replace(/\(Lyric Video\)/gi, "")
+                .replace(/\[Official Audio\]/gi, "")
+                .trim(),
+              artist: item.snippet.channelTitle.replace(" - Topic", "").replace("VEVO", ""),
+              album: "YouTube Music",
+              coverUrl:
+                item.snippet.thumbnails?.high?.url ||
+                item.snippet.thumbnails?.medium?.url ||
+                item.snippet.thumbnails?.default?.url,
+              duration: 180,
+              youtubeId: item.id.videoId,
+              bgGradient: `linear-gradient(135deg, #${Math.floor(Math.random() * 16777215).toString(16)}, #${Math.floor(Math.random() * 16777215).toString(16)})`,
+            }));
+
+          if (tracks.length > 0) {
+            if (SEARCH_CACHE.size > MAX_CACHE_SIZE) {
+              const oldestKey = SEARCH_CACHE.keys().next().value;
+              if (oldestKey) SEARCH_CACHE.delete(oldestKey);
+            }
+            SEARCH_CACHE.set(normalizedQuery, { tracks, expiresAt: Date.now() + CACHE_TTL_MS });
+            return { tracks };
+          }
+        }
+      }
+    } catch (error: any) {
+      console.warn("YouTube API search error:", error);
+    }
   }
 
-  try {
-    const searchQuery = query.toLowerCase().includes("audio") ? query : `${query} audio`;
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(
-      searchQuery
-    )}&key=${apiKey.trim()}`;
-
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      const qTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
-      const filtered = fallbackTracks.filter((t) => {
-        const text = `${t.title} ${t.artist} ${t.album || ""}`.toLowerCase();
-        return qTerms.some((term) => text.includes(term));
-      });
-
-      return {
-        tracks: filtered.length > 0 ? filtered : fallbackTracks,
-      };
-    }
-
-    const data = await res.json();
-    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
-      return { tracks: fallbackTracks };
-    }
-
-    const tracks = data.items
-      .filter((item: any) => item.id && item.id.videoId)
-      .map((item: any) => ({
-        id: `yt-${item.id.videoId}`,
-        title: item.snippet.title
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&amp;/g, "&")
-          .replace(/\(Official Audio\)/gi, "")
-          .replace(/\(Audio\)/gi, "")
-          .replace(/\(Lyric Video\)/gi, "")
-          .replace(/\[Official Audio\]/gi, "")
-          .trim(),
-        artist: item.snippet.channelTitle.replace(" - Topic", "").replace("VEVO", ""),
-        album: "YouTube Music",
-        coverUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
-        duration: 180,
-        youtubeId: item.id.videoId,
-        bgGradient: `linear-gradient(135deg, #${Math.floor(Math.random() * 16777215).toString(16)}, #${Math.floor(Math.random() * 16777215).toString(16)})`,
-      }));
-
-    return { tracks: tracks.length > 0 ? tracks : fallbackTracks };
-  } catch (error: any) {
-    console.warn("YouTube API search error:", error);
-  }
 
   // 3. Try Direct YouTube Web Search (Zero API Key needed, 100% live coverage)
   try {
-
     const searchQuery = query.toLowerCase().includes("audio") ? query : `${query} audio`;
     const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
     const ytRes = await fetch(ytUrl, {
@@ -267,6 +255,7 @@ export async function searchYouTubeTracks(query: string): Promise<{ tracks: Trac
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
+        "Cookie": "CONSENT=YES+cb.20210328-17-p0.en+FX+478;",
       },
       cache: "no-store",
     });
@@ -276,45 +265,48 @@ export async function searchYouTubeTracks(query: string): Promise<{ tracks: Trac
       const match = html.match(/var ytInitialData = ({.*?});<\/script>/);
       if (match) {
         const data = JSON.parse(match[1]);
-        const items =
-          data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]
-            ?.itemSectionRenderer?.contents || [];
+        const sections =
+          data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
 
         const liveTracks: Track[] = [];
-        for (const item of items) {
-          const v = item.videoRenderer;
-          if (v && v.videoId) {
-            const rawTitle = v.title?.runs?.[0]?.text || v.title?.simpleText || "YouTube Track";
-            const rawArtist =
-              v.ownerText?.runs?.[0]?.text ||
-              v.shortBylineText?.runs?.[0]?.text ||
-              "Artist";
-            const thumb =
-              v.thumbnail?.thumbnails?.slice(-1)[0]?.url ||
-              `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
-            const durationSec = parseInt(v.lengthSeconds || "180", 10);
+        for (const section of sections) {
+          const items = section?.itemSectionRenderer?.contents || [];
+          for (const item of items) {
+            const v = item.videoRenderer;
+            if (v && v.videoId) {
+              const rawTitle = v.title?.runs?.[0]?.text || v.title?.simpleText || "YouTube Track";
+              const rawArtist =
+                v.ownerText?.runs?.[0]?.text ||
+                v.shortBylineText?.runs?.[0]?.text ||
+                "Artist";
+              const thumb =
+                v.thumbnail?.thumbnails?.slice(-1)[0]?.url ||
+                `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
+              const durationSec = parseInt(v.lengthSeconds || "180", 10);
 
-            liveTracks.push({
-              id: `yt-${v.videoId}`,
-              title: rawTitle
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/&amp;/g, "&")
-                .replace(/\(Official Audio\)/gi, "")
-                .replace(/\(Audio\)/gi, "")
-                .replace(/\(Lyric Video\)/gi, "")
-                .replace(/\[Official Audio\]/gi, "")
-                .trim(),
-              artist: rawArtist.replace(" - Topic", "").replace("VEVO", "").trim(),
-              album: "YouTube Music",
-              coverUrl: thumb,
-              duration: isNaN(durationSec) ? 180 : durationSec,
-              youtubeId: v.videoId,
-              bgGradient: "linear-gradient(135deg, #1e1b4b, #312e81)",
-            });
+              liveTracks.push({
+                id: `yt-${v.videoId}`,
+                title: rawTitle
+                  .replace(/&quot;/g, '"')
+                  .replace(/&#39;/g, "'")
+                  .replace(/&amp;/g, "&")
+                  .replace(/\(Official Audio\)/gi, "")
+                  .replace(/\(Audio\)/gi, "")
+                  .replace(/\(Lyric Video\)/gi, "")
+                  .replace(/\[Official Audio\]/gi, "")
+                  .trim(),
+                artist: rawArtist.replace(" - Topic", "").replace("VEVO", "").trim(),
+                album: "YouTube Music",
+                coverUrl: thumb,
+                duration: isNaN(durationSec) ? 180 : durationSec,
+                youtubeId: v.videoId,
+                bgGradient: "linear-gradient(135deg, #1e1b4b, #312e81)",
+              });
 
-            if (liveTracks.length >= 10) break;
+              if (liveTracks.length >= 15) break;
+            }
           }
+          if (liveTracks.length >= 15) break;
         }
 
         if (liveTracks.length > 0) {
@@ -325,12 +317,12 @@ export async function searchYouTubeTracks(query: string): Promise<{ tracks: Trac
           SEARCH_CACHE.set(normalizedQuery, { tracks: liveTracks, expiresAt: Date.now() + CACHE_TTL_MS });
           return { tracks: liveTracks };
         }
-
       }
     }
   } catch (directErr) {
     console.warn("Direct YouTube search fallback error:", directErr);
   }
+
 
   // 4. Final Fallback Dataset
   const qTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
