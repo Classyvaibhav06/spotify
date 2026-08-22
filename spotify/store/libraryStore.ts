@@ -298,7 +298,10 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       createdAt: new Date().toISOString(),
     };
 
-    const updated = [newPl, ...get().playlists];
+    const liked = get().playlists.find((p) => p.id === "pl-liked") || defaultPlaylists[0];
+    const others = get().playlists.filter((p) => p.id !== "pl-liked" && p.id !== newId);
+    const updated = [liked, newPl, ...others];
+
     if (typeof window !== "undefined") localStorage.setItem("sp_playlists", JSON.stringify(updated));
     set({ playlists: updated });
     return newId;
@@ -319,11 +322,15 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       createdAt: new Date().toISOString(),
     };
 
-    const updated = [newPl, ...get().playlists];
+    const liked = get().playlists.find((p) => p.id === "pl-liked") || defaultPlaylists[0];
+    const others = get().playlists.filter((p) => p.id !== "pl-liked" && p.id !== newId);
+    const updated = [liked, newPl, ...others];
+
     if (typeof window !== "undefined") localStorage.setItem("sp_playlists", JSON.stringify(updated));
     set({ playlists: updated });
     return newId;
   },
+
 
 
   deletePlaylist: (id: string) => {

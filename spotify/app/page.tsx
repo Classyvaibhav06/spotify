@@ -493,9 +493,10 @@ export default function Home() {
             </div>
 
             {/* Custom User Playlists */}
-            {playlists.slice(1).map((pl) => {
+            {playlists.filter((p) => p.id !== "pl-liked").map((pl) => {
               const posterUrl = pl.coverUrl || (pl.tracks.length > 0 ? pl.tracks[0].coverUrl : undefined);
               return (
+
                 <div
                   key={pl.id}
                   onClick={() => setActivePage("playlist", pl.id)}

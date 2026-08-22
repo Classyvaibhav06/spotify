@@ -26,13 +26,14 @@ const categories = [
 ];
 
 export default function SearchPage() {
-  const { searchQuery, setSearchQuery, openContextMenu, posterFit, setPosterFit } = useUIStore();
+  const { searchQuery, setSearchQuery, openContextMenu, posterFit, setPosterFit, addToast, setActivePage } = useUIStore();
   const [query, setQuery] = useState(searchQuery || "");
   const [results, setResults] = useState<Track[]>([]);
+  const [importedPlaylistData, setImportedPlaylistData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const { play, currentTrack, isPlaying, togglePlay } = usePlayerStore();
-  const { toggleLike, isLiked } = useLibraryStore();
+  const { toggleLike, isLiked, importPlaylist } = useLibraryStore();
 
   useEffect(() => {
     if (searchQuery !== query) {
@@ -44,6 +45,7 @@ export default function SearchPage() {
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setImportedPlaylistData(null);
       setLoading(false);
       return;
     }
@@ -58,6 +60,7 @@ export default function SearchPage() {
         if (res.ok) {
           const data = await res.json();
           setResults(data.tracks || []);
+          setImportedPlaylistData(data.playlist || null);
         }
       } catch (e: any) {
         if (e.name !== "AbortError") {
@@ -74,12 +77,22 @@ export default function SearchPage() {
     };
   }, [query]);
 
-
   const handleSearch = (searchTerm: string) => {
     setQuery(searchTerm);
     setSearchQuery(searchTerm);
   };
 
+  const handleAddPlaylistToLibrary = () => {
+    if (!importedPlaylistData) return;
+    const newId = importPlaylist({
+      name: importedPlaylistData.name,
+      description: importedPlaylistData.description,
+      coverUrl: importedPlaylistData.coverUrl,
+      tracks: importedPlaylistData.tracks,
+    });
+    addToast(`Added "${importedPlaylistData.name}" to Your Library!`, "success");
+    setActivePage("playlist", newId);
+  };
 
   return (
     <div className="px-4 sm:px-6 py-4 text-white pb-36 md:pb-28 min-h-full">
@@ -98,6 +111,45 @@ export default function SearchPage() {
         )}
       </div>
 
+      {/* ── Imported Playlist Banner ── */}
+      {importedPlaylistData && (
+        <div className="mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-[#183a22] to-[#121212] border border-green-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-4 min-w-0">
+            <img
+              src={importedPlaylistData.coverUrl || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80"}
+              alt={importedPlaylistData.name}
+              className="w-20 h-20 rounded-xl object-cover shadow-lg flex-shrink-0"
+            />
+            <div className="min-w-0">
+              <span className="text-[11px] uppercase tracking-wider font-extrabold text-green-400">
+                {importedPlaylistData.provider === "spotify" ? "Spotify Playlist" : "YouTube Playlist"}
+              </span>
+              <h3 className="text-xl font-black text-white truncate">{importedPlaylistData.name}</h3>
+              <p className="text-xs text-gray-300 line-clamp-1">{importedPlaylistData.description || `${importedPlaylistData.tracks.length} tracks`}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{importedPlaylistData.tracks.length} songs</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0 w-full sm:w-auto">
+            <button
+              onClick={handleAddPlaylistToLibrary}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-full bg-white hover:bg-gray-200 text-black font-extrabold text-xs shadow-md transition-all hover:scale-105"
+            >
+              + Add to Library
+            </button>
+            <button
+              onClick={() => {
+                if (importedPlaylistData.tracks.length > 0) {
+                  play(importedPlaylistData.tracks[0], importedPlaylistData.tracks);
+                }
+              }}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-full bg-[#1ed760] hover:bg-[#1fdf64] text-black font-extrabold text-xs shadow-md transition-all hover:scale-105 flex items-center justify-center gap-1"
+            >
+              <MdPlayArrow size={18} /> Play All
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Live Search Results Tracklist ── */}
       {results.length > 0 && (
         <div className="mb-8 space-y-3">
@@ -113,8 +165,8 @@ export default function SearchPage() {
             </button>
           </div>
 
-
           <div className="flex flex-col gap-2">
+
             {results.map((track, i) => {
               const isCurrent = currentTrack?.id === track.id;
               const isPlayingThis = isCurrent && isPlaying;

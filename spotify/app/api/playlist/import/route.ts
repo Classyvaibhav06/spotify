@@ -201,6 +201,77 @@ async function fetchSpotifyPlaylist(
   return { name, description, coverUrl, draftTracks };
 }
 
+export async function parseAndImportPlaylist(url: string) {
+  // 1. Check if it's a YouTube Playlist
+  const ytListId = getYouTubePlaylistId(url);
+  if (ytListId) {
+    const playlist = await fetchYouTubePlaylist(ytListId);
+    return {
+      provider: "youtube" as const,
+      name: playlist.name,
+      description: playlist.description,
+      coverUrl: playlist.coverUrl,
+      tracks: playlist.tracks,
+      totalTracks: playlist.tracks.length,
+    };
+  }
+
+  // 2. Check if it's a Spotify Playlist / Album / Track
+  const spotifyEntity = getSpotifyPlaylistId(url);
+  if (spotifyEntity) {
+    const { name, description, coverUrl, draftTracks } = await fetchSpotifyPlaylist(
+      spotifyEntity.type,
+      spotifyEntity.id
+    );
+
+    if (draftTracks.length === 0) {
+      throw new Error("Could not find any playable tracks in this Spotify playlist.");
+    }
+
+    // Convert all tracks from the Spotify playlist
+    const resolvedTracks: Track[] = draftTracks.map((draft, idx) => ({
+      id: `yt-imp-${idx}-${Date.now()}`,
+      title: draft.title,
+      artist: draft.artist,
+      album: name,
+      duration: draft.duration || 180,
+      youtubeId: `query:${encodeURIComponent(`${draft.title} ${draft.artist}`)}`,
+      coverUrl: draft.coverUrl || coverUrl,
+      bgGradient: "linear-gradient(135deg, #10b981, #047857)",
+    }));
+
+    // Pre-resolve top 8 tracks in parallel for instant zero-lag playback
+    const topCount = Math.min(8, draftTracks.length);
+    await Promise.all(
+      draftTracks.slice(0, topCount).map(async (draft, idx) => {
+        try {
+          const query = `${draft.title} ${draft.artist}`;
+          const res = await searchYouTubeTracks(query);
+          if (res.tracks?.[0]?.youtubeId) {
+            resolvedTracks[idx].youtubeId = res.tracks[0].youtubeId;
+            if (res.tracks[0].coverUrl) {
+              resolvedTracks[idx].coverUrl = res.tracks[0].coverUrl;
+            }
+          }
+        } catch (err) {
+          console.warn(`Track ${idx} pre-resolve skipped:`, err);
+        }
+      })
+    );
+
+    return {
+      provider: "spotify" as const,
+      name,
+      description,
+      coverUrl,
+      tracks: resolvedTracks,
+      totalTracks: draftTracks.length,
+    };
+  }
+
+  throw new Error("Unsupported link. Please paste a valid Spotify or YouTube Playlist link.");
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -210,95 +281,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Please provide a valid playlist link" }, { status: 400 });
     }
 
-    // 1. Check if it's a YouTube Playlist
-    const ytListId = getYouTubePlaylistId(url);
-    if (ytListId) {
-      const playlist = await fetchYouTubePlaylist(ytListId);
-      return NextResponse.json({
-        provider: "youtube",
-        name: playlist.name,
-        description: playlist.description,
-        coverUrl: playlist.coverUrl,
-        tracks: playlist.tracks,
-        totalTracks: playlist.tracks.length,
-      });
-    }
-
-    // 2. Check if it's a Spotify Playlist / Album / Track
-    const spotifyEntity = getSpotifyPlaylistId(url);
-    if (spotifyEntity) {
-      const { name, description, coverUrl, draftTracks } = await fetchSpotifyPlaylist(
-        spotifyEntity.type,
-        spotifyEntity.id
-      );
-
-      if (draftTracks.length === 0) {
-        return NextResponse.json(
-          { error: "Could not find any playable tracks in this Spotify playlist." },
-          { status: 404 }
-        );
-      }
-
-      // Convert all tracks from the Spotify playlist
-      const resolvedTracks: Track[] = draftTracks.map((draft, idx) => ({
-        id: `yt-imp-${idx}-${Date.now()}`,
-        title: draft.title,
-        artist: draft.artist,
-        album: name,
-        duration: draft.duration || 180,
-        youtubeId: `query:${encodeURIComponent(`${draft.title} ${draft.artist}`)}`,
-        coverUrl: draft.coverUrl || coverUrl,
-        bgGradient: "linear-gradient(135deg, #10b981, #047857)",
-      }));
-
-      // Pre-resolve top 8 tracks in parallel for instant zero-lag playback
-      const topCount = Math.min(8, draftTracks.length);
-      await Promise.all(
-        draftTracks.slice(0, topCount).map(async (draft, idx) => {
-          try {
-            const query = `${draft.title} ${draft.artist}`;
-            const res = await searchYouTubeTracks(query);
-            if (res.tracks?.[0]?.youtubeId) {
-              resolvedTracks[idx].youtubeId = res.tracks[0].youtubeId;
-              if (res.tracks[0].coverUrl) {
-                resolvedTracks[idx].coverUrl = res.tracks[0].coverUrl;
-              }
-            }
-          } catch (err) {
-            console.warn(`Track ${idx} pre-resolve skipped:`, err);
-          }
-        })
-      );
-
-
-      return NextResponse.json(
-        {
-          provider: "spotify",
-          name,
-          description,
-          coverUrl,
-          tracks: resolvedTracks,
-          totalTracks: draftTracks.length,
-        },
-        {
-          headers: {
-            "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
-          },
-        }
-      );
-    }
-
-
-
-    return NextResponse.json(
-      { error: "Unsupported link. Please paste a valid Spotify or YouTube Playlist link." },
-      { status: 400 }
-    );
+    const result = await parseAndImportPlaylist(url);
+    return NextResponse.json(result, {
+      headers: {
+        "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+      },
+    });
   } catch (error: any) {
     console.error("Playlist Import failed:", error);
     return NextResponse.json(
       { error: error?.message || "Failed to import playlist. Please check the URL and try again." },
-      { status: 500 }
+      { status: 400 }
     );
   }
 }
+
