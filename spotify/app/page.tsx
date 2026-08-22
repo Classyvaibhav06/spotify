@@ -204,50 +204,50 @@ export default function Home() {
   }, [showRecentPopup]);
 
   const [recentItems, setRecentItems] = useState([
-
     {
       id: "rec-1",
-      title: "Spider-Man Brand New Day Soundtrack 2026",
-      subtitle: "Playlist • Sebastián Galaviz",
-      coverUrl: "https://images.unsplash.com/photo-1635863138275-d9b33299680b?w=200&auto=format&fit=crop&q=80",
-      track: { id: "yt-rec-1", title: "Spider-Man Theme", artist: "Sebastián Galaviz", duration: 210, youtubeId: "b853m6x-5u8" },
+      title: "Top 10 Romantic Songs 2026 | Bollywood Lov...",
+      subtitle: "Album • Pragati Parihar",
+      coverUrl: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=200&auto=format&fit=crop&q=80",
+      track: { id: "yt-rec-1", title: "Top 10 Romantic Songs", artist: "Pragati Parihar", duration: 210, youtubeId: "b853m6x-5u8" },
     },
     {
       id: "rec-2",
-      title: "EGO MODE ☠️ Scroll to latest 🗿",
-      subtitle: "Playlist • brixton.lists",
-      coverUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=200&auto=format&fit=crop&q=80",
-      track: { id: "yt-rec-2", title: "EGO MODE", artist: "brixton.lists", duration: 180, youtubeId: "34Na4j8AVgA" },
+      title: "All Time Top Bollywood Hindi Songs",
+      subtitle: "Playlist • Anish Tripathi",
+      coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&auto=format&fit=crop&q=80",
+      track: { id: "yt-rec-2", title: "Bollywood Hindi Hits", artist: "Anish Tripathi", duration: 195, youtubeId: "34Na4j8AVgA" },
     },
     {
       id: "rec-3",
-      title: "WORKOUT PLAYLIST 2026",
-      subtitle: "Playlist • Systemic",
-      coverUrl: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=200&auto=format&fit=crop&q=80",
-      track: { id: "yt-rec-3", title: "Workout Energy", artist: "Systemic", duration: 200, youtubeId: "4NRXx6U8ABQ" },
+      title: "All time Best BOLLYWOOD songs",
+      subtitle: "Playlist • Ankur Pansare",
+      coverUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=200&auto=format&fit=crop&q=80",
+      track: { id: "yt-rec-3", title: "All Time Best Bollywood", artist: "Ankur Pansare", duration: 220, youtubeId: "4NRXx6U8ABQ" },
     },
     {
       id: "rec-4",
-      title: "Skyfall",
-      subtitle: "Song • Adele",
+      title: "TOP 10 MOST VIRAL PHONK/FUNK 2026",
+      subtitle: "Playlist • Hitsi",
       coverUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&auto=format&fit=crop&q=80",
-      track: { id: "yt-rec-4", title: "Skyfall", artist: "Adele", duration: 286, youtubeId: "DeumyOzKqgI" },
+      track: { id: "yt-rec-4", title: "VIRAL PHONK 2026", artist: "Hitsi", duration: 165, youtubeId: "DeumyOzKqgI" },
     },
     {
       id: "rec-5",
-      title: "all stranger things songs :)",
-      subtitle: "Playlist • Megan Farr",
-      coverUrl: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=200&auto=format&fit=crop&q=80",
-      track: { id: "yt-rec-5", title: "Running Up That Hill", artist: "Kate Bush", duration: 298, youtubeId: "wp43OdtAAkM" },
+      title: "phonk",
+      subtitle: "Playlist • Spotify",
+      coverUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
+      track: { id: "yt-rec-5", title: "Phonk Drift", artist: "Spotify", duration: 150, youtubeId: "wp43OdtAAkM" },
     },
     {
       id: "rec-6",
-      title: "Hope",
-      subtitle: "Song • XXXTENTACION",
-      coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&auto=format&fit=crop&q=80",
-      track: { id: "yt-rec-6", title: "Hope", artist: "XXXTENTACION", duration: 110, youtubeId: "f0bbDFRYD_A" },
+      title: "What's Up?",
+      subtitle: "Song • 4 Non Blondes",
+      coverUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&auto=format&fit=crop&q=80",
+      track: { id: "yt-rec-6", title: "What's Up?", artist: "4 Non Blondes", duration: 295, youtubeId: "6NXnxT8889I" },
     },
   ]);
+
 
   // Load search history and sync stored playlists on client mount
   useEffect(() => {
@@ -636,18 +636,17 @@ export default function Home() {
                       className="fixed inset-0 z-40"
                       onClick={() => setShowRecentPopup(false)}
                     />
-                    <div className="fixed sm:absolute top-[68px] sm:top-[calc(100%+8px)] inset-x-3 sm:inset-x-auto sm:left-0 w-auto sm:w-[440px] md:w-[480px] bg-[#282828] text-white rounded-2xl p-2.5 sm:p-3 shadow-2xl z-50 border border-[#383838] flex flex-col gap-1 max-h-[75vh] sm:max-h-[520px] overflow-y-auto hide-scrollbar">
-
+                    <div className="fixed sm:absolute top-[64px] sm:top-[calc(100%+6px)] inset-x-2 sm:inset-x-auto sm:left-0 w-auto sm:w-[420px] md:w-[460px] bg-[#1f1f1f] text-white rounded-2xl p-2 sm:p-2.5 shadow-2xl shadow-black/90 z-50 border border-[#333333] flex flex-col gap-1 max-h-[75vh] sm:max-h-[500px] overflow-y-auto hide-scrollbar animate-in fade-in zoom-in-95 duration-100">
                       
                       {/* CASE A: USER IS TYPING A QUERY (Show Keyword Suggestions + Live Results) */}
                       {searchQuery ? (
                         <>
                           {/* 1. Keyword Text Suggestions */}
-                          <div className="flex flex-col gap-0.5 pb-2 border-b border-[#383838]">
+                          <div className="flex flex-col gap-0.5 pb-2 border-b border-[#333333]">
                             {[
-                              `${searchQuery} x spiderman`,
-                              `${searchQuery} song`,
-                              `${searchQuery} ke mausam mein`,
+                              `${searchQuery} x phonk`,
+                              `${searchQuery} songs`,
+                              `${searchQuery} slow and reverb`,
                             ].map((sug, i) => (
                               <div
                                 key={i}
@@ -655,10 +654,10 @@ export default function Home() {
                                   setSearchQuery(sug);
                                   if (activePage !== "search") setActivePage("search");
                                 }}
-                                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#383838] cursor-pointer transition-colors"
+                                className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#282828] cursor-pointer transition-colors"
                               >
-                                <MdSearch size={20} className="text-[#b3b3b3]" />
-                                <p className="text-sm text-[#b3b3b3]">
+                                <MdSearch size={20} className="text-[#a7a7a7]" />
+                                <p className="text-sm text-[#a7a7a7]">
                                   <strong className="text-white font-bold">{searchQuery}</strong>
                                   {sug.slice(searchQuery.length)}
                                 </p>
@@ -670,9 +669,9 @@ export default function Home() {
                           <div className="pt-2 flex flex-col gap-1">
                             {isSearching ? (
                               <div className="flex flex-col gap-2 p-2">
-                                <div className="h-12 bg-[#383838] rounded-xl animate-pulse" />
-                                <div className="h-12 bg-[#383838] rounded-xl animate-pulse" />
-                                <div className="h-12 bg-[#383838] rounded-xl animate-pulse" />
+                                <div className="h-12 bg-[#282828] rounded-xl animate-pulse" />
+                                <div className="h-12 bg-[#282828] rounded-xl animate-pulse" />
+                                <div className="h-12 bg-[#282828] rounded-xl animate-pulse" />
                               </div>
                             ) : searchResults.length > 0 ? (
                               searchResults.map((t) => (
@@ -682,10 +681,10 @@ export default function Home() {
                                     play(t, searchResults);
                                     setShowRecentPopup(false);
                                   }}
-                                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#383838] group cursor-pointer transition-colors relative"
+                                  className="flex items-center justify-between p-2 rounded-xl hover:bg-[#282828] group cursor-pointer transition-colors relative"
                                 >
                                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                                    <div className="relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-[#181818] shadow-md">
+                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#181818] shadow-md">
                                       {t.coverUrl ? (
                                         <img
                                           src={t.coverUrl}
@@ -705,10 +704,10 @@ export default function Home() {
                                       </div>
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <p className="font-bold text-white text-sm truncate leading-tight">
+                                      <p className="font-bold text-white text-[13.5px] truncate leading-tight">
                                         {t.title}
                                       </p>
-                                      <p className="text-xs text-[#b3b3b3] truncate mt-0.5">
+                                      <p className="text-[12px] text-[#a7a7a7] truncate mt-0.5">
                                         Song • {t.artist}
                                       </p>
                                     </div>
@@ -720,7 +719,7 @@ export default function Home() {
                                         e.stopPropagation();
                                         addToast(`Options for "${t.title}"`, "info");
                                       }}
-                                      className="p-1 text-[#b3b3b3] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                      className="p-1 text-[#a7a7a7] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
                                       title="More options"
                                     >
                                       <MdMoreHoriz size={20} />
@@ -731,7 +730,7 @@ export default function Home() {
                                         addToQueue(t);
                                         addToast(`Added "${t.title}" to Queue`, "success");
                                       }}
-                                      className="p-1 text-[#b3b3b3] hover:text-white transition-colors"
+                                      className="p-1 text-[#a7a7a7] hover:text-white transition-colors"
                                       title="Add to playlist / queue"
                                     >
                                       <MdAddCircleOutline size={20} />
@@ -740,7 +739,7 @@ export default function Home() {
                                 </div>
                               ))
                             ) : (
-                              <div className="p-4 text-center text-xs text-[#b3b3b3]">
+                              <div className="p-4 text-center text-xs text-[#a7a7a7]">
                                 Searching for &quot;{searchQuery}&quot;...
                               </div>
                             )}
@@ -749,7 +748,7 @@ export default function Home() {
                       ) : (
                         /* CASE B: RECENT SEARCHES (Empty Query) */
                         <>
-                          <div className="font-extrabold text-sm text-white px-2 py-1">
+                          <div className="font-extrabold text-[14px] text-white px-3 pt-2 pb-1">
                             Recent searches
                           </div>
 
@@ -760,10 +759,10 @@ export default function Home() {
                                 play(item.track);
                                 setShowRecentPopup(false);
                               }}
-                              className="flex items-center justify-between p-2 rounded-xl hover:bg-[#383838] group cursor-pointer transition-colors"
+                              className="flex items-center justify-between p-2 rounded-xl hover:bg-[#282828] group cursor-pointer transition-colors"
                             >
                               <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div className="relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-[#181818] shadow-md">
+                                <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#181818] shadow-md">
                                   <img
                                     src={item.coverUrl}
                                     alt={item.title}
@@ -774,10 +773,10 @@ export default function Home() {
                                   </div>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-bold text-white text-sm truncate leading-tight">
+                                  <p className="font-bold text-white text-[13.5px] truncate leading-tight">
                                     {item.title}
                                   </p>
-                                  <p className="text-xs text-[#b3b3b3] truncate mt-0.5">
+                                  <p className="text-[12px] text-[#a7a7a7] truncate mt-0.5">
                                     {item.subtitle}
                                   </p>
                                 </div>
@@ -788,7 +787,7 @@ export default function Home() {
                                   e.stopPropagation();
                                   setRecentItems((prev) => prev.filter((i) => i.id !== item.id));
                                 }}
-                                className="p-1.5 text-[#b3b3b3] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-white/10"
+                                className="p-1.5 text-[#a7a7a7] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-white/10 flex-shrink-0"
                                 title="Remove from recent searches"
                               >
                                 <MdClose size={18} />
@@ -800,6 +799,7 @@ export default function Home() {
                     </div>
                   </>
                 )}
+
               </div>
             </div>
 
