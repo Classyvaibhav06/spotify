@@ -172,12 +172,29 @@ export default function FullPlayerModal() {
           </div>
 
           {/* Interactive Seekbar / Progress Timeline */}
-          <div className="space-y-1 pt-1">
-            <div className="relative flex items-center group py-1">
+          <div className="space-y-1.5 pt-1">
+            <div className="relative flex items-center w-full h-6 cursor-pointer touch-none select-none">
+              {/* Background Track */}
+              <div className="w-full h-1 bg-white/25 rounded-full overflow-hidden relative">
+                {/* Active Progress Fill */}
+                <div
+                  className="h-full bg-white rounded-full transition-all duration-75"
+                  style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+                />
+              </div>
+
+              {/* Draggable White Circle Thumb Dot */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md shadow-black/60 pointer-events-none transition-transform"
+                style={{ left: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+              />
+
+              {/* Invisible Full-Hitbox Range Slider Input */}
               <input
                 type="range"
                 min={0}
                 max={duration || 100}
+                step={0.1}
                 value={activeTime}
                 onMouseDown={() => setIsDragging(true)}
                 onTouchStart={() => setIsDragging(true)}
@@ -190,15 +207,16 @@ export default function FullPlayerModal() {
                   setIsDragging(false);
                   seek(dragTime);
                 }}
-                className="w-full h-1 bg-white/20 hover:bg-white/30 rounded-lg appearance-none cursor-pointer accent-white transition-all"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
               />
             </div>
 
-            <div className="flex justify-between text-[11px] font-semibold text-[#b3b3b3]">
+            <div className="flex justify-between text-[11.5px] font-semibold text-[#b3b3b3]">
               <span>{formatTime(activeTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
+
 
           {/* Main Playback Buttons Row */}
           <div className="flex items-center justify-between pt-1">
