@@ -452,7 +452,7 @@ export default function Home() {
           </div>
 
           {/* Scrollable Library List */}
-          <div className="flex-1 overflow-y-auto hide-scrollbar px-2 pb-2 flex flex-col gap-1">
+          <div suppressHydrationWarning className="flex-1 overflow-y-auto hide-scrollbar px-2 pb-2 flex flex-col gap-1">
             {/* Liked Songs Auto-Playlist */}
             <div
               onClick={() => setActivePage("playlist", "pl-liked")}
@@ -463,7 +463,7 @@ export default function Home() {
               <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-liked-songs flex items-center justify-center shadow-md">
                 <MdFavorite size={22} className="text-white" />
               </div>
-              <div className="flex flex-col min-w-0">
+              <div className="flex flex-col min-w-0" suppressHydrationWarning>
                 <span className="font-bold text-white truncate text-sm">Liked Songs</span>
                 <span className="text-[#b3b3b3] text-xs truncate flex items-center gap-1" suppressHydrationWarning>
                   Playlist • {likedSongs.length} songs
@@ -481,6 +481,7 @@ export default function Home() {
                   className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer group transition-colors ${
                     activePlaylistId === pl.id ? "bg-[#252525]" : "hover:bg-[#1f1f1f]"
                   }`}
+                  suppressHydrationWarning
                 >
                   <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-[#181818] shadow">
                     {posterUrl ? (
@@ -498,14 +499,15 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-white truncate text-sm">{pl.name}</span>
+                  <div className="flex flex-col min-w-0" suppressHydrationWarning>
+                    <span className="font-bold text-white truncate text-sm" suppressHydrationWarning>{pl.name}</span>
                     <span className="text-[#b3b3b3] text-xs truncate" suppressHydrationWarning>Playlist • {pl.tracks.length} songs</span>
                   </div>
                 </div>
               );
             })}
           </div>
+
         </aside>
 
         {/* ═══════════════════════════════ CENTER MAIN AREA */}
@@ -1253,7 +1255,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className={libView === "grid" ? "grid grid-cols-2 md:grid-cols-4 gap-4" : "flex flex-col gap-2"}>
+                <div suppressHydrationWarning className={libView === "grid" ? "grid grid-cols-2 md:grid-cols-4 gap-4" : "flex flex-col gap-2"}>
                   {playlists.map((pl) => (
                     <div
                       key={pl.id}
@@ -1261,6 +1263,7 @@ export default function Home() {
                       className={`p-4 rounded-xl bg-[#181818] hover:bg-[#252525] cursor-pointer transition-colors ${
                         libView === "list" ? "flex items-center gap-4" : ""
                       }`}
+                      suppressHydrationWarning
                     >
                       <div
                         className={`rounded-lg flex items-center justify-center font-bold text-lg shadow-md ${
@@ -1270,12 +1273,13 @@ export default function Home() {
                       >
                         ♪
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-sm text-white truncate">{pl.name}</p>
-                        <p className="text-xs text-[#b3b3b3] truncate">Playlist • {pl.tracks.length} songs</p>
+                      <div className="min-w-0" suppressHydrationWarning>
+                        <p className="font-bold text-sm text-white truncate" suppressHydrationWarning>{pl.name}</p>
+                        <p className="text-xs text-[#b3b3b3] truncate" suppressHydrationWarning>Playlist • {pl.tracks.length} songs</p>
                       </div>
                     </div>
                   ))}
+
                 </div>
               </div>
             )}
